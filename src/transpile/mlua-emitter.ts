@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
 import type { ScriptClassInfo } from "./script-class";
-import { resolveType } from "./type-resolver";
+import { resolveType, hasImmediateInit } from "./type-resolver";
 
 const DUMMY_PARAM = "____MSW_CLASS____";
 
@@ -107,8 +107,25 @@ export function printMluaScript(
     lines.push(`script ${info.className}${extendsClause}`);
     lines.push("");
 
-    // Emit properties from TypeScript AST
     const sourceFile = program.getSourceFile(sourceFileName)!;
+
+    // Collect property names so we can strip their self-assignments from the constructor body
+    const propertyNames = new Set(
+        info.members
+            .filter(ts.isPropertyDeclaration)
+            .map((m) => (ts.isIdentifier(m.name) ? m.name.text : undefined))
+            .filter((n): n is string => n !== undefined),
+    );
+
+    // Get the constructor Lua body upfront so we can mutate it before emitting properties
+    const constructorBody = luaMethods.get("____constructor");
+    // Statements to use for constructor body: drop super() call, then filter property assignments
+    const constructorStatements = constructorBody
+        ? (info.extendsName ? constructorBody.statements.slice(1) : [...constructorBody.statements])
+              .filter((s) => !isSelfPropertyAssignment(s, propertyNames))
+        : [];
+
+    // Emit properties from TypeScript AST
     for (const member of info.members) {
         if (!ts.isPropertyDeclaration(member)) continue;
         const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
@@ -120,28 +137,31 @@ export function printMluaScript(
             lines.push(`\t${decorator}`);
         }
         const propPrefix = `${isStatic ? "static " : ""}${isReadonly ? "readonly " : ""}`;
-        const propInit = (!isReadonly && member.initializer) ? ` = ${member.initializer.getText(sourceFile)}` : "";
+        // Types that need a concrete initializer get one; others get = nil; readonly gets nothing
+        let propInit = "";
+        if (!isReadonly) {
+            if (hasImmediateInit(typeStr) || member.initializer) {
+                const val = member.initializer ? member.initializer.getText(sourceFile) : "nil";
+                propInit = ` = ${val}`;
+            } else {
+                propInit = " = nil";
+            }
+        }
         lines.push(`\t${propPrefix}property ${typeStr} ${name}${propInit}`);
         lines.push("");
     }
 
-    // Emit constructor as OnInitialize
+    // Emit constructor — name differs by script type
+    const constructorMethodName = info.scriptType === "Component" ? "OnInitialize" : "__Load";
     const constructor = info.members.find(ts.isConstructorDeclaration);
     if (constructor) {
-        const body = luaMethods.get("____constructor");
-        lines.push(`\tmethod void OnInitialize()`);
-        if (body) {
-            // Drop the leading super() call if the class extends something
-            const statements = info.extendsName
-                ? body.statements.slice(1)
-                : body.statements;
-            if (statements.length > 0) {
-                // @ts-expect-error printStatementArray is protected in LuaPrinter
-                const printed: (string | object)[] = printer.printStatementArray(statements);
-                const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
-                for (const bodyLine of bodyStr.split("\n")) {
-                    if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
-                }
+        lines.push(`\tmethod void ${constructorMethodName}()`);
+        if (constructorStatements.length > 0) {
+            // @ts-expect-error printStatementArray is protected in LuaPrinter
+            const printed: (string | object)[] = printer.printStatementArray(constructorStatements);
+            const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+            for (const bodyLine of bodyStr.split("\n")) {
+                if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
             }
         }
         lines.push(`\tend`);
@@ -192,6 +212,16 @@ export function printMluaScript(
 
     lines.push("end");
     return lines.join("\n");
+}
+
+// Returns true if the statement is a `self.<name> = ...` assignment for a known property name
+function isSelfPropertyAssignment(s: tstl.Statement, propertyNames: Set<string>): boolean {
+    if (!tstl.isAssignmentStatement(s) || s.left.length !== 1) return false;
+    const lhs = s.left[0]!;
+    if (!tstl.isTableIndexExpression(lhs)) return false;
+    if (!tstl.isIdentifier(lhs.table) || lhs.table.text !== "self") return false;
+    if (!tstl.isStringLiteral(lhs.index)) return false;
+    return propertyNames.has(lhs.index.value);
 }
 
 function getDecorators(node: ts.HasModifiers): string[] {

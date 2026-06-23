@@ -1,5 +1,16 @@
 import * as ts from "typescript";
 
+// Types that require an explicit = value initializer in mlua property declarations
+const IMMEDIATE_INIT_TYPES = new Set([
+    "number", "int32", "float", "integer",
+    "boolean",
+    "Entity", "EntityRef",
+]);
+
+export function hasImmediateInit(type: string): boolean {
+    return IMMEDIATE_INIT_TYPES.has(type);
+}
+
 const PASSTHROUGH_TYPES = new Set([
     "void", "string", "number", "boolean",
     "Entity",

@@ -49,6 +49,12 @@ declare function LogicClass(target: abstract new (...args: any[]) => any): void;
 /** Marks a class as a Component script. Use instead of \`@Component\` (which conflicts with the Component base class). */
 declare function ComponentClass(target: abstract new (...args: any[]) => any): void;
 
+/** Marks a class as an Event script. */
+declare function EventClass(target: abstract new (...args: any[]) => any): void;
+
+/** Marks a class as a Struct script. */
+declare function StructClass(target: abstract new (...args: any[]) => any): void;
+
 
 declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
 
