@@ -1,5 +1,11 @@
 export type ScriptKind = "class" | "enum";
 
+export interface DocComment {
+    description?: string;
+    sealed?: boolean;
+    deprecated?: boolean;
+}
+
 export interface ScriptDeclaration {
     kind: ScriptKind;
     name: string;
@@ -7,6 +13,7 @@ export interface ScriptDeclaration {
     extendsName?: string;
     members: MemberDeclaration[];
     sourcePath: string;
+    doc?: DocComment;
 }
 
 export type MemberDeclaration =
@@ -21,6 +28,7 @@ export interface PropertyDeclaration {
     type: string;
     readonly: boolean;
     static: boolean;
+    doc?: DocComment;
 }
 
 export interface MethodDeclaration {
@@ -29,11 +37,13 @@ export interface MethodDeclaration {
     returnType: string;
     parameters: ParameterDeclaration[];
     static: boolean;
+    doc?: DocComment;
 }
 
 export interface ConstructorDeclaration {
     kind: "constructor";
     parameters: ParameterDeclaration[];
+    doc?: DocComment;
 }
 
 export interface EnumMemberDeclaration {

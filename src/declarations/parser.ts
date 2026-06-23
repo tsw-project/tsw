@@ -2,6 +2,7 @@ import type {
     MemberDeclaration,
     ParameterDeclaration,
     ScriptDeclaration,
+    DocComment,
 } from "./ast";
 import { must, splitTopLevel } from "./text";
 import { toReturnType, toTypeScriptType } from "./type-mapper";
@@ -39,6 +40,7 @@ export async function parseDeclarationFile(
                 extendsName: scriptMatch[3],
                 members: [],
                 sourcePath,
+                doc: parseDocComment(pendingAnnotations),
             };
             pendingAnnotations.length = 0;
             continue;
@@ -49,7 +51,7 @@ export async function parseDeclarationFile(
             continue;
         }
 
-        const member = parseMember(line);
+        const member = parseMember(line, pendingAnnotations);
         if (!member) {
             throw new Error(`Could not parse ${sourcePath}: ${line}`);
         }
@@ -65,7 +67,23 @@ export async function parseDeclarationFile(
     return script;
 }
 
-function parseMember(line: string): MemberDeclaration | undefined {
+function parseDocComment(annotations: string[]): DocComment | undefined {
+    const description = annotations
+        .find((a) => a.startsWith('---@description'))
+        ?.match(/---@description\s+"([^"]+)"/)?.[1];
+    const sealed = annotations.includes("---@sealed");
+    const deprecated = annotations.includes("---@deprecated");
+    if (!description && !sealed && !deprecated) return undefined;
+    return {
+        ...(description && { description }),
+        ...(sealed && { sealed }),
+        ...(deprecated && { deprecated }),
+    };
+}
+
+function parseMember(line: string, annotations: string[]): MemberDeclaration | undefined {
+    const doc = parseDocComment(annotations);
+
     const enumMemberMatch = line.match(
         /^member\s+([A-Za-z_]\w*)\s*=\s*(-?\d+)$/,
     );
@@ -87,6 +105,7 @@ function parseMember(line: string): MemberDeclaration | undefined {
             readonly: Boolean(propertyMatch[2]),
             type: toTypeScriptType(must(propertyMatch[3], "property type")),
             name: must(propertyMatch[4], "property name"),
+            doc,
         };
     }
 
@@ -104,6 +123,7 @@ function parseMember(line: string): MemberDeclaration | undefined {
             parameters: parseParameters(
                 must(methodMatch[4], "method parameters"),
             ),
+            doc,
         };
     }
 
@@ -116,6 +136,7 @@ function parseMember(line: string): MemberDeclaration | undefined {
             parameters: parseParameters(
                 must(constructorMatch[1], "constructor parameters"),
             ),
+            doc,
         };
     }
 
@@ -129,6 +150,7 @@ function parseMember(line: string): MemberDeclaration | undefined {
             parameters: parseParameters(
                 must(emitterMatch[2], "emitter parameters"),
             ),
+            doc,
         };
     }
 

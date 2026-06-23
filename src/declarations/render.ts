@@ -1,10 +1,21 @@
 import type {
+    DocComment,
     EnumMemberDeclaration,
     MemberDeclaration,
     MethodDeclaration,
     ParameterDeclaration,
     ScriptDeclaration,
 } from "./ast";
+
+function renderDocComment(doc: DocComment | undefined, indent = ""): string {
+    if (!doc) return "";
+    const tags: string[] = [];
+    if (doc.description) tags.push(` * ${doc.description}`);
+    if (doc.sealed) tags.push(` * @sealed`);
+    if (doc.deprecated) tags.push(` * @deprecated`);
+    if (tags.length === 0) return "";
+    return [`${indent}/**`, ...tags.map((t) => `${indent}${t}`), `${indent} */`, ""].join("\n");
+}
 
 export function renderDeclaration(declaration: ScriptDeclaration): string {
     const lines = [
@@ -23,6 +34,8 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
     const extendsClause = declaration.extendsName
         ? ` extends ${declaration.extendsName}`
         : "";
+    const classDoc = renderDocComment(declaration.doc);
+    if (classDoc) lines.push(classDoc.trimEnd());
     lines.push(
         `declare class ${declaration.name}${genericParameters}${extendsClause} {`,
     );
@@ -32,6 +45,8 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
             continue;
         }
 
+        const memberDoc = renderDocComment("doc" in member ? member.doc : undefined, "    ");
+        if (memberDoc) lines.push(memberDoc.trimEnd());
         lines.push(`    ${renderClassMember(member)}`);
     }
 
