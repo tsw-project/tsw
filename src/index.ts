@@ -10,12 +10,6 @@ function addWorkingDirectoryOptions(cmd: Command): Command {
                 "World/project directory.",
             ).default(process.cwd(), "current working directory"),
         )
-        .addOption(
-            new Option(
-                "--working-directory <world-directory>",
-                "Alias for --cwd.",
-            ),
-        );
 }
 
 function resolveWorkingDirectory(opts: { cwd: string; workingDirectory?: string }): string {
