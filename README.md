@@ -25,4 +25,4 @@ declare const _TSLogic: TSLogic
 
 Then build them from the root of this repository:
 
-`bun run start -- build --cwd <path-to-msw-project>`
+`bun run start -- watch --cwd <path-to-msw-project>`
