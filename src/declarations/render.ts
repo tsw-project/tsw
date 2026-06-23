@@ -43,6 +43,12 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
 export function renderSupportDeclaration(): string {
     return `/* Shared support declarations for generated Maplestory Worlds types. */
 
+/** Marks a class as a Logic script. Use instead of \`@Logic\` (which conflicts with the Logic base class). */
+declare function LogicClass(target: abstract new (...args: any[]) => any): void;
+
+/** Lua print function. */
+declare function print(...args: any[]): void;
+
 interface LuaTable {
     readonly [key: string]: unknown;
     readonly [key: number]: unknown;

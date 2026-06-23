@@ -1,0 +1,155 @@
+import * as ts from "typescript";
+import * as tstl from "typescript-to-lua";
+import type { ScriptClassInfo } from "./script-class";
+
+const DUMMY_PARAM = "____MSW_CLASS____";
+
+/**
+ * Wraps the method-assignment statements produced by TSTL's class transform
+ * inside a dummy function so we can retrieve them by name in the printer.
+ */
+export function wrapClassStatements(
+    node: ts.ClassDeclaration,
+    context: tstl.TransformationContext,
+): tstl.Statement[] {
+    const statements = context.superTransformNode(node) as tstl.Statement[];
+
+    const className = node.name?.text;
+    if (!className) return statements;
+
+    // Keep only the method-assignment statements
+    const methodStatements = statements.filter(
+        (s): s is tstl.AssignmentStatement =>
+            tstl.isAssignmentStatement(s) &&
+            s.left.length === 1 &&
+            s.right.length === 1 &&
+            tstl.isFunctionExpression(s.right[0]!),
+    );
+
+    return [
+        tstl.createExpressionStatement(
+            tstl.createFunctionExpression(
+                tstl.createBlock(methodStatements),
+                [tstl.createIdentifier(DUMMY_PARAM), tstl.createIdentifier(className)],
+            ),
+        ),
+    ];
+}
+
+/**
+ * Finds method Lua AST bodies from the wrapped function statement,
+ * keyed by method name.
+ */
+function findLuaMethods(statements: tstl.Statement[]): Map<string, tstl.Block> {
+    const map = new Map<string, tstl.Block>();
+    for (const s of statements) {
+        if (!tstl.isAssignmentStatement(s)) continue;
+        if (s.left.length !== 1 || s.right.length !== 1) continue;
+
+        const lhs = s.left[0]!;
+        if (!tstl.isTableIndexExpression(lhs)) continue;
+
+        const key = lhs.index;
+        if (!tstl.isStringLiteral(key)) continue;
+
+        const func = s.right[0]!;
+        if (!tstl.isFunctionExpression(func)) continue;
+
+        map.set(key.value, func.body);
+    }
+    return map;
+}
+
+/**
+ * Detects the wrapper function emitted by wrapClassStatements and returns
+ * its inner method statements, or undefined if this is not a wrapped script file.
+ */
+export function extractWrappedStatements(
+    file: tstl.File,
+    className: string,
+): tstl.Statement[] | undefined {
+    for (const s of file.statements) {
+        if (!tstl.isExpressionStatement(s)) continue;
+        const fn = s.expression;
+        if (!tstl.isFunctionExpression(fn)) continue;
+        if (
+            fn.params?.length === 2 &&
+            fn.params[0]!.text === DUMMY_PARAM &&
+            fn.params[1]!.text === className
+        ) {
+            return fn.body.statements;
+        }
+    }
+    return undefined;
+}
+
+/**
+ * Produces the full mlua file content for a Logic script.
+ * Uses TSTL's LuaPrinter to print method bodies as real Lua.
+ */
+export function printMluaScript(
+    info: ScriptClassInfo,
+    file: tstl.File,
+    program: ts.Program,
+    emitHost: tstl.EmitHost,
+    sourceFileName: string,
+): string {
+    const wrappedStatements = extractWrappedStatements(file, info.className);
+    if (wrappedStatements === undefined) return "";
+
+    const luaMethods = findLuaMethods(wrappedStatements);
+    const printer = new tstl.LuaPrinter(emitHost, program, sourceFileName);
+
+    const lines: string[] = [];
+    lines.push(`@${info.scriptType}`);
+    lines.push(`script ${info.className} extends ${info.extendsName ?? info.scriptType}`);
+    lines.push("");
+
+    // Emit properties from TypeScript AST
+    const sourceFile = program.getSourceFile(sourceFileName)!;
+    for (const member of info.members) {
+        if (!ts.isPropertyDeclaration(member)) continue;
+        const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
+        if (!name) continue;
+        const typeStr = member.type ? member.type.getText(sourceFile) : "any";
+        const init = member.initializer ? member.initializer.getText(sourceFile) : "nil";
+        lines.push(`\tproperty ${typeStr} ${name} = ${init}`);
+        lines.push("");
+    }
+
+    // Emit methods: signature from TypeScript AST, body from Lua AST via TSTL printer
+    for (const member of info.members) {
+        if (!ts.isMethodDeclaration(member)) continue;
+        const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
+        if (!name) continue;
+
+        const isStatic = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword) ?? false;
+        const returnType = member.type ? member.type.getText(sourceFile) : "void";
+        const params = member.parameters
+            .map((p) => {
+                const pName = ts.isIdentifier(p.name) ? p.name.text : "_";
+                const pType = p.type ? p.type.getText(sourceFile) : "any";
+                return `${pType} ${pName}`;
+            })
+            .join(", ");
+
+        const prefix = isStatic ? "static " : "";
+        lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
+
+        const body = luaMethods.get(name);
+        if (body && body.statements.length > 0) {
+            // @ts-expect-error printStatementArray is protected in LuaPrinter
+            const printed: (string | object)[] = printer.printStatementArray(body.statements);
+            const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+            for (const bodyLine of bodyStr.split("\n")) {
+                if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+            }
+        }
+
+        lines.push(`\tend`);
+        lines.push("");
+    }
+
+    lines.push("end");
+    return lines.join("\n");
+}
