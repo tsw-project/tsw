@@ -65,6 +65,9 @@ export function resolveType(
     if (raw.startsWith("AsNumber")) return "number";
     if (raw.startsWith("AsString")) return "string";
 
+    // JS built-ins that have no mlua equivalent
+    if (baseName === "Promise") return "any";
+
     // Plain identifier types (classes, event types, etc.) pass through as-is
     if (/^[A-Z][A-Za-z0-9]*$/.test(baseName)) return raw;
 
