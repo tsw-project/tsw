@@ -59,7 +59,7 @@ declare function StructClass(target: abstract new (...args: any[]) => any): void
 declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
 
 /** Marks a property as synchronized between server and client. */
-declare function Sync(target: object, propertyKey: string, descriptor?: PropertyDescriptor): void;
+declare function Sync(target: any, propertyKey: string, descriptor?: PropertyDescriptor): void;
 
 /** Lua print function. */
 declare function print(...args: any[]): void;
