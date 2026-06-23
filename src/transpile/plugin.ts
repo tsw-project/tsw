@@ -4,9 +4,17 @@ import { SourceNode } from "source-map";
 import type { Plugin } from "typescript-to-lua";
 import { collectScriptClass } from "./script-class";
 import { wrapClassStatements, printMluaScript } from "./mlua-emitter";
+import type { ScriptType } from "./msw-files";
 
-export function createMswPlugin(): Plugin {
-    return {
+export interface MswPlugin {
+    plugin: Plugin;
+    /** Populated after transpileProject — maps absolute source path to script type. */
+    emittedScripts: Map<string, ScriptType>;
+}
+
+export function createMswPlugin(): MswPlugin {
+    const emittedScripts = new Map<string, ScriptType>();
+    const plugin: Plugin = {
         visitors: {
             [ts.SyntaxKind.ClassDeclaration](node: ts.ClassDeclaration, context: tstl.TransformationContext) {
                 const { info } = collectScriptClass(node.getSourceFile());
@@ -28,8 +36,11 @@ export function createMswPlugin(): Plugin {
                 return new tstl.LuaPrinter(emitHost, program, sourceFileName).print(file);
             }
 
+            emittedScripts.set(sourceFileName, info.scriptType as ScriptType);
             const code = printMluaScript(info, file, program, emitHost, sourceFileName);
             return { code, sourceMap: "", sourceMapNode: new SourceNode(null, null, null, code) };
         },
     };
+
+    return { plugin, emittedScripts };
 }
