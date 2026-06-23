@@ -2,6 +2,7 @@ import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
 import type { ScriptClassInfo } from "./script-class";
 import { resolveType, hasImmediateInit } from "./type-resolver";
+import { rewriteRequires, findRequirePath } from "./require-rewriter";
 
 const DUMMY_PARAM = "____MSW_CLASS____";
 
@@ -98,6 +99,10 @@ export function printMluaScript(
     const wrappedStatements = extractWrappedStatements(file, info.className);
     if (wrappedStatements === undefined) return "";
 
+    // require() calls appear at file level (outside the wrapper) — collect them for injection into method bodies
+    const fileRequires = file.statements.filter((s) => findRequirePath(s) !== undefined);
+    const rewrittenRequires = rewriteRequires(fileRequires);
+
     const luaMethods = findLuaMethods(wrappedStatements);
     const printer = new tstl.LuaPrinter(emitHost, program, sourceFileName);
 
@@ -156,9 +161,10 @@ export function printMluaScript(
     const constructor = info.members.find(ts.isConstructorDeclaration);
     if (constructor) {
         lines.push(`\tmethod void ${constructorMethodName}()`);
-        if (constructorStatements.length > 0) {
+        const constructorBodyStatements = [...rewrittenRequires, ...constructorStatements];
+        if (constructorBodyStatements.length > 0) {
             // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(constructorStatements);
+            const printed: (string | object)[] = printer.printStatementArray(constructorBodyStatements);
             const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
             for (const bodyLine of bodyStr.split("\n")) {
                 if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
@@ -208,18 +214,27 @@ export function printMluaScript(
         }
 
         const body = luaMethods.get(name);
-        if (body && body.statements.length > 0) {
-            // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(body.statements);
-            const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
-            for (const bodyLine of bodyStr.split("\n")) {
-                if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+        if (body) {
+            const bodyStatements = [...rewrittenRequires, ...body.statements];
+            if (bodyStatements.length > 0) {
+                // @ts-expect-error printStatementArray is protected in LuaPrinter
+                const printed: (string | object)[] = printer.printStatementArray(bodyStatements);
+                const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+                for (const bodyLine of bodyStr.split("\n")) {
+                    if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+                }
             }
         }
 
         lines.push(`\tend`);
         lines.push("");
     }
+
+    // __Load() lets this script class be required like a module — returns self
+    lines.push(`\tmethod any __Load()`);
+    lines.push(`\t\treturn self`);
+    lines.push(`\tend`);
+    lines.push("");
 
     lines.push("end");
     return lines.join("\n");
