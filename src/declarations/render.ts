@@ -52,6 +52,10 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
 
     lines.push("", "}");
 
+    if (declaration.scriptType === "Service") {
+        lines.push("", `declare const _${declaration.name}: ${declaration.name};`);
+    }
+
     return `${lines.join("\n")}\n`;
 }
 

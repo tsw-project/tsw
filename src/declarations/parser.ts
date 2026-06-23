@@ -40,6 +40,7 @@ export async function parseDeclarationFile(
                 extendsName: scriptMatch[3],
                 members: [],
                 sourcePath,
+                scriptType: parseScriptType(pendingAnnotations),
                 doc: parseDocComment(pendingAnnotations),
             };
             pendingAnnotations.length = 0;
@@ -65,6 +66,14 @@ export async function parseDeclarationFile(
     }
 
     return script;
+}
+
+function parseScriptType(annotations: string[]): string | undefined {
+    for (const a of annotations) {
+        const m = a.match(/^@([A-Za-z]\w*)$/);
+        if (m) return m[1];
+    }
+    return undefined;
 }
 
 function parseDocComment(annotations: string[]): DocComment | undefined {
