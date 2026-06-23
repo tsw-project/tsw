@@ -171,12 +171,17 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
 
             const { diagnostics } = transpiler.emit({ program });
 
-            const errors = diagnostics.filter(
-                (d) =>
-                    d.category === ts.DiagnosticCategory.Error &&
-                    d.messageText !==
-                        "Decorator function cannot have 'this: void'.",
-            );
+            const errors = [
+                ...ts.getPreEmitDiagnostics(program).filter(
+                    (d) => d.category === ts.DiagnosticCategory.Error,
+                ),
+                ...diagnostics.filter(
+                    (d) =>
+                        d.category === ts.DiagnosticCategory.Error &&
+                        d.messageText !==
+                            "Decorator function cannot have 'this: void'.",
+                ),
+            ];
 
             if (errors.length > 0) {
                 const formatted = ts.formatDiagnosticsWithColorAndContext(
