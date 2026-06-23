@@ -114,10 +114,14 @@ export function printMluaScript(
         if (!name) continue;
         const typeStr = resolveType(program, member);
         const init = member.initializer ? member.initializer.getText(sourceFile) : "nil";
+        const isReadonly = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword) ?? false;
+        const isStatic = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword) ?? false;
         for (const decorator of getDecorators(member)) {
             lines.push(`\t${decorator}`);
         }
-        lines.push(`\tproperty ${typeStr} ${name} = ${init}`);
+        const propPrefix = `${isStatic ? "static " : ""}${isReadonly ? "readonly " : ""}`;
+        const propInit = isReadonly ? "" : ` = ${init}`;
+        lines.push(`\t${propPrefix}property ${typeStr} ${name}${propInit}`);
         lines.push("");
     }
 
