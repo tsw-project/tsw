@@ -48,6 +48,9 @@ export function resolveType(program: ts.Program, node: ts.Node, isParam = false)
     if (raw.startsWith("AsNumber")) return "number";
     if (raw.startsWith("AsString")) return "string";
 
+    // Plain identifier types (classes, event types, etc.) pass through as-is
+    if (/^[A-Z][A-Za-z0-9]*$/.test(baseName)) return raw;
+
     return "any";
 }
 

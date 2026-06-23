@@ -190,11 +190,22 @@ export function printMluaScript(
             })
             .join(", ");
 
-        for (const decorator of getDecorators(member)) {
+        const decorators = getDecorators(member);
+        const isHandler = decorators.some((d) => d.startsWith("@EventSender"));
+        for (const decorator of decorators) {
             lines.push(`\t${decorator}`);
         }
         const prefix = isStatic ? "static " : "";
-        lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
+        if (isHandler) {
+            // handler <EventType> <name>(<EventType> event)
+            // The event type comes from the first parameter's type annotation
+            const firstParam = member.parameters[0];
+            const eventType = firstParam ? resolveType(program, firstParam, true) : "any";
+            const eventParamName = firstParam && ts.isIdentifier(firstParam.name) ? firstParam.name.text : "event";
+            lines.push(`\t${prefix}handler ${name}(${eventType} ${eventParamName})`);
+        } else {
+            lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
+        }
 
         const body = luaMethods.get(name);
         if (body && body.statements.length > 0) {
