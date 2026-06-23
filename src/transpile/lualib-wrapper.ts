@@ -3,7 +3,7 @@ import path from "node:path";
 import { writeCodeblock } from "./msw-files";
 
 const BUNDLE_NAME = "lualib_bundle";
-const SCRIPT_NAME = "LuaLib";
+export const LUALIB_SCRIPT_NAME = "LuaLib";
 const LOAD_METHOD = "lualib_bundle_Load";
 
 /**
@@ -60,7 +60,7 @@ export function writeLualibBundleScript(outDir: string, extraLuaChunks: string[]
 
     const mlua = [
         `@Logic`,
-        `script ${SCRIPT_NAME} extends Logic`,
+        `script ${LUALIB_SCRIPT_NAME} extends Logic`,
         ``,
         `\tmethod void ${LOAD_METHOD}()`,
         `\t\tif _G["__lualib_loaded"] then return end`,
@@ -73,10 +73,10 @@ export function writeLualibBundleScript(outDir: string, extraLuaChunks: string[]
         `end`,
     ].join("\n");
 
-    fs.writeFileSync(path.join(outDir, `${SCRIPT_NAME}.mlua`), mlua);
+    fs.writeFileSync(path.join(outDir, `${LUALIB_SCRIPT_NAME}.mlua`), mlua);
     writeCodeblock(
-        path.join(outDir, `${SCRIPT_NAME}.codeblock`),
-        SCRIPT_NAME,
+        path.join(outDir, `${LUALIB_SCRIPT_NAME}.codeblock`),
+        LUALIB_SCRIPT_NAME,
         "Logic",
     );
 }

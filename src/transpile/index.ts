@@ -5,7 +5,27 @@ import { Transpiler, transpileProject } from "typescript-to-lua";
 import { generateDeclarations } from "../declarations";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
 import { createMswPlugin } from "./plugin";
-import { writeLualibBundleScript } from "./lualib-wrapper";
+import { writeLualibBundleScript, LUALIB_SCRIPT_NAME } from "./lualib-wrapper";
+
+function removeStaleOutputFiles(outDir: string, expectedFiles: Set<string>): void {
+    if (!fs.existsSync(outDir)) return;
+    for (const entry of fs.readdirSync(outDir)) {
+        if ((entry.endsWith(".mlua") || entry.endsWith(".codeblock")) && !expectedFiles.has(entry)) {
+            fs.unlinkSync(path.join(outDir, entry));
+        }
+    }
+}
+
+function expectedOutputFiles(emittedScripts: Map<string, unknown>): Set<string> {
+    const files = new Set<string>();
+    files.add(`${LUALIB_SCRIPT_NAME}.mlua`);
+    files.add(`${LUALIB_SCRIPT_NAME}.codeblock`);
+    for (const className of emittedScripts.keys()) {
+        files.add(`${className}.mlua`);
+        files.add(`${className}.codeblock`);
+    }
+    return files;
+}
 
 export interface BuildOptions {
     workingDirectory: string;
@@ -96,6 +116,8 @@ export async function build({
             scriptType,
         );
     }
+
+    removeStaleOutputFiles(outDir, expectedOutputFiles(emittedScripts));
 
     return { emitSkipped, outputDirectory: outDir };
 }
@@ -189,6 +211,8 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
                     scriptType,
                 );
             }
+
+            removeStaleOutputFiles(outDir, expectedOutputFiles(emittedScripts));
 
             console.log(
                 `[${new Date().toLocaleTimeString()}] Build complete. Watching for changes...`,
