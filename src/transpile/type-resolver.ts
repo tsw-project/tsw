@@ -2,7 +2,14 @@ import * as ts from "typescript";
 
 const PASSTHROUGH_TYPES = new Set([
     "void", "string", "number", "boolean",
-    "Entity", "Vector2", "Vector3", "Vector4", "Color",
+    "Entity",
+    "Vector2", "Vector3", "Vector4",
+    "FastVector2", "FastVector3",
+    "Quaternion",
+    "Color",
+    "List", "Dictionary",
+    "SyncList", "SyncDictionary",
+    "ReadOnlyList", "ReadOnlyDictionary",
 ]);
 
 /**
@@ -21,7 +28,9 @@ export function resolveType(program: ts.Program, node: ts.Node, isParam = false)
     // String literal types → string
     if (raw[0] === '"' || raw[0] === "'" || raw[0] === "`") return "string";
 
-    if (PASSTHROUGH_TYPES.has(raw)) return raw;
+    // Extract base name for generic types like List<string> → List
+    const baseName = raw.includes("<") ? raw.slice(0, raw.indexOf("<")) : raw;
+    if (PASSTHROUGH_TYPES.has(baseName)) return raw;
     if (raw.startsWith("Sync")) return raw;
     if (raw.startsWith("AsTable")) return "table";
     if (raw.startsWith("AsAny")) return "any";
