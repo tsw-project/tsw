@@ -1,6 +1,7 @@
 import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
 import type { ScriptClassInfo } from "./script-class";
+import { resolveType } from "./type-resolver";
 
 const DUMMY_PARAM = "____MSW_CLASS____";
 
@@ -111,7 +112,7 @@ export function printMluaScript(
         if (!ts.isPropertyDeclaration(member)) continue;
         const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
         if (!name) continue;
-        const typeStr = member.type ? member.type.getText(sourceFile) : "any";
+        const typeStr = resolveType(program, member);
         const init = member.initializer ? member.initializer.getText(sourceFile) : "nil";
         lines.push(`\tproperty ${typeStr} ${name} = ${init}`);
         lines.push("");
@@ -124,12 +125,11 @@ export function printMluaScript(
         if (!name) continue;
 
         const isStatic = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword) ?? false;
-        const returnType = member.type ? member.type.getText(sourceFile) : "void";
+        const returnType = resolveType(program, member);
         const params = member.parameters
             .map((p) => {
                 const pName = ts.isIdentifier(p.name) ? p.name.text : "_";
-                const pType = p.type ? p.type.getText(sourceFile) : "any";
-                return `${pType} ${pName}`;
+                return `${resolveType(program, p, true)} ${pName}`;
             })
             .join(", ");
 
