@@ -184,7 +184,7 @@ export function printMluaScript(
                 .map((n) => (typeof n === "string" ? n : String(n)))
                 .join("");
             for (const bodyLine of bodyStr.split("\n")) {
-                if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+                if (bodyLine.trim()) lines.push(`\t\t${bodyLine}`);
             }
         }
         lines.push(`\tend`);
@@ -256,7 +256,7 @@ export function printMluaScript(
                 .map((n) => (typeof n === "string" ? n : String(n)))
                 .join("");
             for (const bodyLine of bodyStr.split("\n")) {
-                if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+                if (bodyLine.trim()) lines.push(`\t\t${bodyLine}`);
             }
         }
 
