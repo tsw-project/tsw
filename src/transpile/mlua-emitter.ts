@@ -133,6 +133,9 @@ export function printMluaScript(
             })
             .join(", ");
 
+        for (const decorator of getMethodDecorators(member)) {
+            lines.push(`\t${decorator}`);
+        }
         const prefix = isStatic ? "static " : "";
         lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
 
@@ -152,4 +155,22 @@ export function printMluaScript(
 
     lines.push("end");
     return lines.join("\n");
+}
+
+function getMethodDecorators(node: ts.MethodDeclaration): string[] {
+    const results: string[] = [];
+    for (const modifier of node.modifiers ?? []) {
+        if (!ts.isDecorator(modifier)) continue;
+        const expr = modifier.expression;
+        if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression)) {
+            const name = expr.expression.text;
+            const args = expr.arguments.map((a) =>
+                ts.isStringLiteral(a) ? `"${a.text}"` : a.getText(),
+            );
+            results.push(`@${name}(${args.join(", ")})`);
+        } else if (ts.isIdentifier(expr)) {
+            results.push(`@${expr.text}`);
+        }
+    }
+    return results;
 }
