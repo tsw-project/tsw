@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as ts from "typescript";
 import { Transpiler, transpileProject } from "typescript-to-lua";
+import { generateDeclarations } from "../declarations";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
 import { createMswPlugin } from "./plugin";
 import { writeLualibBundleScript } from "./lualib-wrapper";
@@ -22,6 +23,7 @@ export interface WatchOptions {
 export async function build({
     workingDirectory,
 }: BuildOptions): Promise<BuildResult> {
+    await generateDeclarations({ workingDirectory });
     const resolvedWorkingDirectory = path.resolve(workingDirectory);
     const scriptDir = path.join(resolvedWorkingDirectory, "Script");
     const outDir = path.join(
@@ -98,7 +100,8 @@ export async function build({
     return { emitSkipped, outputDirectory: outDir };
 }
 
-export function watch({ workingDirectory }: WatchOptions): void {
+export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
+    await generateDeclarations({ workingDirectory });
     const resolvedWorkingDirectory = path.resolve(workingDirectory);
     const scriptDir = path.join(resolvedWorkingDirectory, "Script");
     const outDir = path.join(

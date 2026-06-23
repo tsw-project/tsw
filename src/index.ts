@@ -66,12 +66,12 @@ async function main() {
         .command("watch")
         .description("Watch TypeScript sources and recompile on change.");
     addWorkingDirectoryOptions(watchCmd);
-    watchCmd.action(() => {
+    watchCmd.action(async () => {
         const opts = watchCmd.optsWithGlobals<{
             cwd: string;
             workingDirectory?: string;
         }>();
-        watch({ workingDirectory: resolveWorkingDirectory(opts) });
+        await watch({ workingDirectory: resolveWorkingDirectory(opts) });
     });
 
     // Legacy default: no subcommand runs declarations
