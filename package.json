@@ -1,11 +1,24 @@
 {
     "name": "@tsw-project/tsw",
-    "module": "index.ts",
+    "version": "0.0.1",
+    "description": "MapleStory Worlds TypeScript toolchain.",
     "type": "module",
-    "private": true,
+    "main": "./dist/index.js",
+    "bin": {
+        "tsw": "./dist/index.js"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
         "start": "bun run src/index",
+        "build": "bun build src/index.ts --outdir dist --target node --packages external '--banner=#!/usr/bin/env node'",
         "biome:fix": "biome check --write ."
+    },
+    "engines": {
+        "node": ">=18"
     },
     "devDependencies": {
         "@types/bun": "latest",
