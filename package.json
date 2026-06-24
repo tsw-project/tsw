@@ -15,6 +15,9 @@
     "scripts": {
         "start": "node --experimental-strip-types src/index.ts",
         "build": "tsdown",
+        "docs:start": "npm --prefix docs-site start",
+        "docs:build": "npm --prefix docs-site run build",
+        "docs:serve": "npm --prefix docs-site run serve",
         "biome:fix": "biome check --write ."
     },
     "engines": {

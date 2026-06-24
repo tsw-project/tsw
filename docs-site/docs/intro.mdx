@@ -1,0 +1,27 @@
+---
+sidebar_position: 1
+---
+
+# Intro
+
+`tsw` is a TypeScript-to-MapleStory Worlds transpiler based on [TypeScriptToLua](https://typescripttolua.github.io/) that turns TypeScript
+source files into `.mlua` scripts for MapleStory Worlds projects.
+
+## Feature Map
+
+`tsw` supports a subset of _TypeScript_ and _TypeScriptToLua_ functionality that is compatible with the `.mlua` format.
+
+| Feature                                     | Status  | Notes                       |
+|---------------------------------------------|---------|-----------------------------|
+| MSW Classes (`Logic`, `Component` etc.)     | ✅      |                             |
+| MSW Decorators (`@Sync`, `@ExecSpace` etc.) | ✅      |                             |
+| Free functions                              | ✅      |                             |
+| Global variables                            | ✅      |                             |
+| Classes                                     | ✅      |                             |
+| Promises                                    | ✅      |                             |
+| Exceptions                                  | ✅      |                             |
+| TSTL library / `lualib_bundle.lua`          | ✅      | Injected globally           |
+| Exception Source Maps                       | 🚧      |                             |
+| Debugger Source Maps                        | ❌      |                             |
+| npm modules                                 | ❌      |                             |
+| `import` / `export` / `require`             | ❌      | Impossible without performance hit |
