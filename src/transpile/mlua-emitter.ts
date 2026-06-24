@@ -1,5 +1,9 @@
 import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
+import {
+    TSW_MANAGER_LOAD_METHOD,
+    TSW_MANAGER_SCRIPT_NAME,
+} from "./global-wrapper.ts";
 import type { ScriptClassInfo } from "./script-class.ts";
 import { hasImmediateInit, resolveType } from "./type-resolver.ts";
 
@@ -265,7 +269,9 @@ export function printMluaScript(
         }
 
         if (info.scriptType === "Logic" && name === "OnBeginPlay") {
-            lines.push(`\t\t_LuaLib:lualib_bundle_Load()`);
+            lines.push(
+                `\t\t_${TSW_MANAGER_SCRIPT_NAME}:${TSW_MANAGER_LOAD_METHOD}()`,
+            );
         }
 
         const body = luaMethods.get(name);

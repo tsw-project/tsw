@@ -5,7 +5,7 @@ import { writeCodeblock } from "./msw-files.ts";
 
 const BUNDLE_NAME = "lualib_bundle";
 export const LUALIB_SCRIPT_NAME = "LuaLib";
-const LOAD_METHOD = "lualib_bundle_Load";
+export const LUALIB_LOAD_METHOD = "LoadLuaLib";
 const require = createRequire(import.meta.url);
 
 /**
@@ -26,11 +26,11 @@ function parseExportedNames(bundleSource: string): string[] {
 
 /**
  * Reads lualib_bundle.lua emitted by TSTL into outDir and writes:
- *   - LuaLib.mlua     — a Logic script with a single lualib_bundle_Load method
+ *   - LuaLib.mlua     — a Logic script with a single LoadLuaLib method
  *                       that inlines the bundle body and promotes all exports to _G
  *   - LuaLib.codeblock — the MSW metadata sidecar
  */
-export function writeLualibBundleScript(outDir: string, extraLuaChunks: string[] = []): void {
+export function writeLualibBundleScript(outDir: string): void {
     const bundleLuaPath = require.resolve(
         `typescript-to-lua/dist/lualib/universal/${BUNDLE_NAME}.lua`,
     );
@@ -51,25 +51,15 @@ export function writeLualibBundleScript(outDir: string, extraLuaChunks: string[]
         .map((n) => `\t\t_G["${n}"] = ${n}`)
         .join("\n");
 
-    const indentedExtras = extraLuaChunks
-        .map((chunk) =>
-            chunk
-                .split("\n")
-                .map((line) => (line.trim() ? `\t\t${line}` : ""))
-                .join("\n"),
-        )
-        .join("\n\n");
-
     const mlua = [
         `@Logic`,
         `script ${LUALIB_SCRIPT_NAME} extends Logic`,
         ``,
-        `\tmethod void ${LOAD_METHOD}()`,
+        `\tmethod void ${LUALIB_LOAD_METHOD}()`,
         `\t\tif _G["__lualib_loaded"] then return end`,
         `\t\t_G["__lualib_loaded"] = true`,
         indentedBody,
         globalAssignments,
-        ...(indentedExtras ? [indentedExtras] : []),
         `\tend`,
         ``,
         `end`,

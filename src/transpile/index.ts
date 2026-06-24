@@ -3,23 +3,40 @@ import path from "node:path";
 import * as ts from "typescript";
 import { Transpiler, transpileProject } from "typescript-to-lua";
 import { generateDeclarations } from "../declarations/index.ts";
+import {
+    LUALIB_SCRIPT_NAME,
+    writeLualibBundleScript,
+} from "./lualib-wrapper.ts";
+import {
+    TSW_MANAGER_SCRIPT_NAME,
+    writeTSWGlobalScript,
+} from "./global-wrapper.ts";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files.ts";
 import { createMswPlugin } from "./plugin.ts";
-import { writeLualibBundleScript, LUALIB_SCRIPT_NAME } from "./lualib-wrapper.ts";
 
-function removeStaleOutputFiles(outDir: string, expectedFiles: Set<string>): void {
+function removeStaleOutputFiles(
+    outDir: string,
+    expectedFiles: Set<string>,
+): void {
     if (!fs.existsSync(outDir)) return;
     for (const entry of fs.readdirSync(outDir)) {
-        if ((entry.endsWith(".mlua") || entry.endsWith(".codeblock")) && !expectedFiles.has(entry)) {
+        if (
+            (entry.endsWith(".mlua") || entry.endsWith(".codeblock")) &&
+            !expectedFiles.has(entry)
+        ) {
             fs.unlinkSync(path.join(outDir, entry));
         }
     }
 }
 
-function expectedOutputFiles(emittedScripts: Map<string, unknown>): Set<string> {
+function expectedOutputFiles(
+    emittedScripts: Map<string, unknown>,
+): Set<string> {
     const files = new Set<string>();
     files.add(`${LUALIB_SCRIPT_NAME}.mlua`);
     files.add(`${LUALIB_SCRIPT_NAME}.codeblock`);
+    files.add(`${TSW_MANAGER_SCRIPT_NAME}.mlua`);
+    files.add(`${TSW_MANAGER_SCRIPT_NAME}.codeblock`);
     for (const className of emittedScripts.keys()) {
         files.add(`${className}.mlua`);
         files.add(`${className}.codeblock`);
@@ -58,7 +75,7 @@ export async function build({
         fs.mkdirSync(scriptDir, { recursive: true });
     }
 
-    const { plugin, emittedScripts, processedSourceFiles, nonScriptClassLuaByFile } =
+    const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
         createMswPlugin(outDir);
 
     const { diagnostics, emitSkipped } = transpileProject(tsconfigPath, {
@@ -104,7 +121,8 @@ export async function build({
         }
     }
 
-    writeLualibBundleScript(outDir, [...nonScriptClassLuaByFile.values()]);
+    writeLualibBundleScript(outDir);
+    writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
     const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
     ensureOutputDirectory(rootDesk, outDir);
@@ -137,7 +155,7 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
         fs.mkdirSync(scriptDir, { recursive: true });
     }
 
-    const { plugin, emittedScripts, processedSourceFiles, nonScriptClassLuaByFile } =
+    const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
         createMswPlugin(outDir);
     const transpiler = new Transpiler();
 
@@ -170,9 +188,9 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
             const { diagnostics } = transpiler.emit({ program });
 
             const errors = [
-                ...ts.getPreEmitDiagnostics(program).filter(
-                    (d) => d.category === ts.DiagnosticCategory.Error,
-                ),
+                ...ts
+                    .getPreEmitDiagnostics(program)
+                    .filter((d) => d.category === ts.DiagnosticCategory.Error),
                 ...diagnostics.filter(
                     (d) =>
                         d.category === ts.DiagnosticCategory.Error &&
@@ -197,13 +215,17 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
             // Delete the empty per-source-file stubs TSTL wrote
             for (const sourceFile of processedSourceFiles) {
                 const rel = path.relative(scriptDir, sourceFile);
-                const stubPath = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
+                const stubPath = path.join(
+                    outDir,
+                    rel.replace(/\.ts$/, ".mlua"),
+                );
                 if (fs.existsSync(stubPath)) {
                     fs.unlinkSync(stubPath);
                 }
             }
 
-            writeLualibBundleScript(outDir, [...nonScriptClassLuaByFile.values()]);
+            writeLualibBundleScript(outDir);
+            writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
             const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
             ensureOutputDirectory(rootDesk, outDir);
