@@ -1,10 +1,12 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { writeCodeblock } from "./msw-files.ts";
 
 const BUNDLE_NAME = "lualib_bundle";
 export const LUALIB_SCRIPT_NAME = "LuaLib";
 const LOAD_METHOD = "lualib_bundle_Load";
+const require = createRequire(import.meta.url);
 
 /**
  * Parses the exported names from the `return { key = value, ... }` table at
