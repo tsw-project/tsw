@@ -4,13 +4,17 @@ import * as ts from "typescript";
 import { Transpiler, transpileProject } from "typescript-to-lua";
 import { generateDeclarations } from "../declarations/index.ts";
 import {
-    LUALIB_SCRIPT_NAME,
-    writeLualibBundleScript,
-} from "./lualib-wrapper.ts";
+    updateGeneratedLogicGlobalsFromProgram,
+    updateGeneratedLogicGlobalsFromTsconfig,
+} from "./generated-logic-globals.ts";
 import {
     TSW_MANAGER_SCRIPT_NAME,
     writeTSWGlobalScript,
 } from "./global-wrapper.ts";
+import {
+    LUALIB_SCRIPT_NAME,
+    writeLualibBundleScript,
+} from "./lualib-wrapper.ts";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files.ts";
 import { createMswPlugin } from "./plugin.ts";
 
@@ -74,6 +78,8 @@ export async function build({
     if (!fs.existsSync(scriptDir)) {
         fs.mkdirSync(scriptDir, { recursive: true });
     }
+
+    updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
 
     const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
         createMswPlugin(outDir);
@@ -155,6 +161,8 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
         fs.mkdirSync(scriptDir, { recursive: true });
     }
 
+    updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
+
     const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
         createMswPlugin(outDir);
     const transpiler = new Transpiler();
@@ -182,6 +190,8 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
     host.afterProgramCreate = (builderProgram) => {
         try {
             const program = builderProgram.getProgram();
+            updateGeneratedLogicGlobalsFromProgram(scriptDir, program);
+
             emittedScripts.clear();
             processedSourceFiles.clear();
 
