@@ -3,9 +3,9 @@
     "version": "0.0.1",
     "description": "MapleStory Worlds TypeScript toolchain.",
     "type": "module",
-    "main": "./dist/index.js",
+    "main": "./dist/index.mjs",
     "bin": {
-        "tsw": "./dist/index.js"
+        "tsw": "./dist/index.mjs"
     },
     "files": [
         "dist",
@@ -13,15 +13,16 @@
         "LICENSE"
     ],
     "scripts": {
-        "start": "bun run src/index",
-        "build": "bun build src/index.ts --outdir dist --target node --packages external '--banner=#!/usr/bin/env node'",
+        "start": "node --experimental-strip-types src/index.ts",
+        "build": "tsdown",
         "biome:fix": "biome check --write ."
     },
     "engines": {
         "node": ">=18"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.5.1"
+        "@biomejs/biome": "^2.5.1",
+        "tsdown": "latest"
     },
     "dependencies": {
         "commander": "^15.0.0",
