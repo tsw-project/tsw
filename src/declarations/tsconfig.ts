@@ -1,10 +1,13 @@
-import { writeFile } from "node:fs/promises";
+import { access, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function writeTsConfig(workingDirectory: string) {
     const tsconfigPath = path.join(workingDirectory, "tsconfig.json");
-    if (await Bun.file(tsconfigPath).exists()) {
+    try {
+        await access(tsconfigPath);
         return;
+    } catch {
+        // file does not exist, proceed to write
     }
 
     const tsconfig = {

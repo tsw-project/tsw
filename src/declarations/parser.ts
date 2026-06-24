@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import type {
     DocComment,
     MemberDeclaration,
@@ -10,7 +11,7 @@ import { toReturnType, toTypeScriptType } from "./type-mapper";
 export async function parseDeclarationFile(
     sourcePath: string,
 ): Promise<ScriptDeclaration> {
-    const text = await Bun.file(sourcePath).text();
+    const text = await readFile(sourcePath, "utf8");
     const lines = text.split(/\r?\n/);
 
     let script: ScriptDeclaration | undefined;
