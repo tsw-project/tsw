@@ -11,11 +11,11 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://bw0bw0.github.io',
-  baseUrl: '/tsw-preview/',
+  url: 'https://tsw-project.github.io',
+  baseUrl: '/tsw/',
 
-  organizationName: 'bw0bw0',
-  projectName: 'tsw-preview',
+  organizationName: 'tsw-project',
+  projectName: 'tsw',
 
   onBrokenLinks: 'throw',
 
@@ -30,7 +30,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/bw0bw0/tsw-preview/tree/main/docs-site/',
+          editUrl: 'https://github.com/tsw-project/tsw/tree/main/docs-site/',
         },
         blog: false,
         theme: {
@@ -59,7 +59,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://github.com/bw0bw0/tsw-preview',
+          href: 'https://github.com/tsw-project/tsw',
           label: 'GitHub',
           position: 'right',
         },
@@ -86,7 +86,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/bw0bw0/tsw-preview',
+              href: 'https://github.com/tsw-project/tsw',
             },
             {
               label: 'npm',
