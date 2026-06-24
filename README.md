@@ -1,28 +1,68 @@
 # tsw
 
-**Warning: This is for reference only. The code is not remotely production-ready**
+_⚠️Warning: This project is very early in development and should not be used in production environments.._
 
-## Requirements
+`tsw` is a TypeScript-to-MapleStory Worlds (.mlua) transpiler, allowing more powerful type-checking capabilities and various other quality of life improvements.
 
-- [bun](https://bun.com/)
+---
 
-## Usage
+## Getting Started
 
-Create a `Script` directory in your msw project, and create `@Logic` classes inside:
+### 1. Prerequisites
 
+- Install [Node.js](https://nodejs.org/en)
+
+### 2. Installation
+
+Install the transpiler globally via npm:
+
+```bash
+npm i -g @tsw-project/tsw
 ```
-@LogicClass
-class TSLogic extends Logic {
-    @Sync
-    hp: number = 100
 
-    OnBeginPlay(): void {
-        print('hi!')
-    }
+### 3. Setup
+
+1. Open your MapleStory Worlds project.
+2. Go to **Edit > WorldConfig** and enable:
+* `LocalWorkspace`
+* `UseExtendedScriptFormat`
+
+3. Navigate to your local project folder in your terminal and run:
+```bash
+tsw init
+```
+
+### 4. Create Script
+
+Create a `Scripts` directory in your project root and add your `.ts` files:
+
+**Scripts/SomeFile.ts**
+
+```ts
+function FreeFunction() {
+    print('hi from free function!')
 }
-declare const _TSLogic: TSLogic
+
+@LogicClass
+class LogicClass extends Logic {
+    OnBeginPlay(): void {
+        FreeFunction()
+    }
+} 
 ```
 
-Then build them from the root of this repository:
+### 5. Build
 
-`bun run start -- watch --cwd <path-to-msw-project>`
+_Run in your MapleStory Worlds project root._
+
+**Building**
+
+```
+tsw build
+```
+
+**Watching**
+
+```
+tsw watch
+```
