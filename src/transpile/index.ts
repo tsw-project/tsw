@@ -57,6 +57,23 @@ function writeEmittedScriptCode(
     }
 }
 
+function createTstlWriteFile(
+    outDir: string,
+    writeFile: ts.WriteFileCallback = ts.sys.writeFile,
+): ts.WriteFileCallback {
+    return (fileName, data, writeByteOrderMark, onError, sourceFiles) => {
+        const rel = path.relative(outDir, fileName);
+        const isTswManagedOutput =
+            rel.length > 0 &&
+            !rel.startsWith("..") &&
+            !path.isAbsolute(rel) &&
+            (fileName.endsWith(".mlua") || fileName.endsWith(".mlua.map"));
+
+        if (isTswManagedOutput) return;
+        writeFile(fileName, data, writeByteOrderMark, onError, sourceFiles);
+    };
+}
+
 export interface BuildOptions {
     workingDirectory: string;
 }
@@ -90,25 +107,24 @@ export async function build({
 
     updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
 
-    const {
-        plugin,
-        emittedScripts,
-        emittedScriptCode,
-        processedSourceFiles,
-        topLevelLuaByFile,
-    } = createMswPlugin(outDir);
+    const { plugin, emittedScripts, emittedScriptCode, topLevelLuaByFile } =
+        createMswPlugin(outDir);
 
-    const { diagnostics, emitSkipped } = transpileProject(tsconfigPath, {
-        luaPlugins: [{ plugin }],
-        noHeader: true,
-        noEmit: false,
-        noImplicitSelf: true,
-        experimentalDecorators: true,
-        extension: "mlua",
-        module: ts.ModuleKind.CommonJS,
-        rootDir: scriptDir,
-        outDir,
-    });
+    const { diagnostics, emitSkipped } = transpileProject(
+        tsconfigPath,
+        {
+            luaPlugins: [{ plugin }],
+            noHeader: true,
+            noEmit: false,
+            noImplicitSelf: true,
+            experimentalDecorators: true,
+            extension: "mlua",
+            module: ts.ModuleKind.CommonJS,
+            rootDir: scriptDir,
+            outDir,
+        },
+        createTstlWriteFile(outDir),
+    );
 
     const errors = diagnostics.filter(
         (d) =>
@@ -130,15 +146,6 @@ export async function build({
             return msg;
         });
         throw new Error(messages.join("\n"));
-    }
-
-    // Delete the empty per-source-file stubs TSTL wrote (we handled output ourselves)
-    for (const sourceFile of processedSourceFiles) {
-        const rel = path.relative(scriptDir, sourceFile);
-        const stubPath = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
-        if (fs.existsSync(stubPath)) {
-            fs.unlinkSync(stubPath);
-        }
     }
 
     writeEmittedScriptCode(outDir, emittedScriptCode);
@@ -178,13 +185,8 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
 
     updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
 
-    const {
-        plugin,
-        emittedScripts,
-        emittedScriptCode,
-        processedSourceFiles,
-        topLevelLuaByFile,
-    } = createMswPlugin(outDir);
+    const { plugin, emittedScripts, emittedScriptCode, topLevelLuaByFile } =
+        createMswPlugin(outDir);
     const transpiler = new Transpiler();
 
     // Cast needed: TSTL extends ts.CompilerOptions with extra fields unknown to tsc's types.
@@ -214,9 +216,11 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
 
             emittedScripts.clear();
             emittedScriptCode.clear();
-            processedSourceFiles.clear();
 
-            const { diagnostics } = transpiler.emit({ program });
+            const { diagnostics } = transpiler.emit({
+                program,
+                writeFile: createTstlWriteFile(outDir),
+            });
 
             const errors = [
                 ...ts
@@ -241,18 +245,6 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
                 );
                 process.stderr.write(formatted);
                 return;
-            }
-
-            // Delete the empty per-source-file stubs TSTL wrote
-            for (const sourceFile of processedSourceFiles) {
-                const rel = path.relative(scriptDir, sourceFile);
-                const stubPath = path.join(
-                    outDir,
-                    rel.replace(/\.ts$/, ".mlua"),
-                );
-                if (fs.existsSync(stubPath)) {
-                    fs.unlinkSync(stubPath);
-                }
             }
 
             writeEmittedScriptCode(outDir, emittedScriptCode);

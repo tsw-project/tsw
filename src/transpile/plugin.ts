@@ -21,8 +21,6 @@ export interface MswPlugin {
     emittedScripts: Map<string, ScriptType>;
     /** className -> generated mlua content, populated during emit. Clear before each incremental rebuild. */
     emittedScriptCode: Map<string, string>;
-    /** Source files processed during emit. Clear before each incremental rebuild. */
-    processedSourceFiles: Set<string>;
     /** sourceFileName -> non-script-class Lua statements. Persistent across watch rebuilds. */
     topLevelLuaByFile: Map<string, TopLevelLuaChunk>;
 }
@@ -95,7 +93,6 @@ export function createMswPlugin(outDir: string): MswPlugin {
 
     const emittedScripts = new Map<string, ScriptType>();
     const emittedScriptCode = new Map<string, string>();
-    const processedSourceFiles = new Set<string>();
     const topLevelLuaByFile = new Map<string, TopLevelLuaChunk>();
     const scriptClassNamesByProgram = new WeakMap<ts.Program, Set<string>>();
 
@@ -153,8 +150,6 @@ export function createMswPlugin(outDir: string): MswPlugin {
                     sourceFileName,
                 ).print(file);
             }
-
-            processedSourceFiles.add(sourceFileName);
 
             const { infos } = collectScriptClasses(sourceFile);
             const classNames = new Set(infos.map((i) => i.className));
@@ -228,7 +223,6 @@ export function createMswPlugin(outDir: string): MswPlugin {
         plugin,
         emittedScripts,
         emittedScriptCode,
-        processedSourceFiles,
         topLevelLuaByFile,
     };
 }
