@@ -48,6 +48,15 @@ function expectedOutputFiles(
     return files;
 }
 
+function writeEmittedScriptCode(
+    outDir: string,
+    emittedScriptCode: Map<string, string>,
+): void {
+    for (const [className, code] of emittedScriptCode) {
+        fs.writeFileSync(path.join(outDir, `${className}.mlua`), code);
+    }
+}
+
 export interface BuildOptions {
     workingDirectory: string;
 }
@@ -81,8 +90,13 @@ export async function build({
 
     updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
 
-    const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
-        createMswPlugin(outDir);
+    const {
+        plugin,
+        emittedScripts,
+        emittedScriptCode,
+        processedSourceFiles,
+        topLevelLuaByFile,
+    } = createMswPlugin(outDir);
 
     const { diagnostics, emitSkipped } = transpileProject(tsconfigPath, {
         luaPlugins: [{ plugin }],
@@ -127,6 +141,7 @@ export async function build({
         }
     }
 
+    writeEmittedScriptCode(outDir, emittedScriptCode);
     writeLualibBundleScript(outDir);
     writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
@@ -163,8 +178,13 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
 
     updateGeneratedLogicGlobalsFromTsconfig(scriptDir, tsconfigPath);
 
-    const { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile } =
-        createMswPlugin(outDir);
+    const {
+        plugin,
+        emittedScripts,
+        emittedScriptCode,
+        processedSourceFiles,
+        topLevelLuaByFile,
+    } = createMswPlugin(outDir);
     const transpiler = new Transpiler();
 
     // Cast needed: TSTL extends ts.CompilerOptions with extra fields unknown to tsc's types.
@@ -193,6 +213,7 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
             updateGeneratedLogicGlobalsFromProgram(scriptDir, program);
 
             emittedScripts.clear();
+            emittedScriptCode.clear();
             processedSourceFiles.clear();
 
             const { diagnostics } = transpiler.emit({ program });
@@ -234,6 +255,7 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
                 }
             }
 
+            writeEmittedScriptCode(outDir, emittedScriptCode);
             writeLualibBundleScript(outDir);
             writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 

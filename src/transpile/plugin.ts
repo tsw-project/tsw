@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { SourceNode } from "source-map";
 import * as ts from "typescript";
 import type { Plugin } from "typescript-to-lua";
@@ -17,6 +16,8 @@ export interface MswPlugin {
     plugin: Plugin;
     /** className -> script type, populated during emit. Clear before each incremental rebuild. */
     emittedScripts: Map<string, ScriptType>;
+    /** className -> generated mlua content, populated during emit. Clear before each incremental rebuild. */
+    emittedScriptCode: Map<string, string>;
     /** Source files processed during emit. Clear before each incremental rebuild. */
     processedSourceFiles: Set<string>;
     /** sourceFileName -> non-script-class Lua statements. Persistent across watch rebuilds. */
@@ -90,6 +91,7 @@ export function createMswPlugin(outDir: string): MswPlugin {
     fs.mkdirSync(outDir, { recursive: true });
 
     const emittedScripts = new Map<string, ScriptType>();
+    const emittedScriptCode = new Map<string, string>();
     const processedSourceFiles = new Set<string>();
     const topLevelLuaByFile = new Map<string, TopLevelLuaChunk>();
     const scriptClassNamesByProgram = new WeakMap<ts.Program, Set<string>>();
@@ -168,10 +170,7 @@ export function createMswPlugin(outDir: string): MswPlugin {
                     sourceFileName,
                 );
                 if (code) {
-                    fs.writeFileSync(
-                        path.join(outDir, `${info.className}.mlua`),
-                        code,
-                    );
+                    emittedScriptCode.set(info.className, code);
                     emittedScripts.set(
                         info.className,
                         info.scriptType as ScriptType,
@@ -226,5 +225,11 @@ export function createMswPlugin(outDir: string): MswPlugin {
         },
     };
 
-    return { plugin, emittedScripts, processedSourceFiles, topLevelLuaByFile };
+    return {
+        plugin,
+        emittedScripts,
+        emittedScriptCode,
+        processedSourceFiles,
+        topLevelLuaByFile,
+    };
 }
