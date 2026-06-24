@@ -1,0 +1,60 @@
+# Globals
+
+`tsw` scripts can contain **free functions**, **variables** and **classes**.
+
+```ts
+function FreeFunction() {
+    print('hi from free function!')
+}
+
+class Class {
+    method() {
+        print('hi from method!')
+    }
+}
+
+function ReturningFunction() {
+    return 10
+}
+
+const Variable = ReturningFunction()
+```
+
+## Initialization Orders
+
+All globals in a transpiled program are emitted in this order:
+
+1. Global function definitions
+2. Global class definitions
+3. Global class inheritance chains
+4. Global class bodies
+5. Global variables
+
+Most initialization operations are safe, but global variables are subject to [siof](https://en.cppreference.com/cpp/language/siof) and cannot be (directly) dependent across files:
+
+```ts
+// file-a.ts
+const a = 10
+const b = a; // ✅ safe, `b` comes after `a` in this file
+
+// file-b.ts
+const c = a; // ❌ unsafe, `a` is in another file, and may be initialized after c
+```
+
+To work around this limitation, you can use the "Construct on First Use" idiom:
+
+```ts
+// file-a.ts
+function a() {
+    if (_G["__a"] === undefined) {
+        _G["__a"] = 10
+    }
+
+    return _G["__a"]
+}
+
+const b = a() // ✅ safe
+
+// file-b.ts
+const c = a() // ✅ safe
+```

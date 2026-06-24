@@ -1,0 +1,80 @@
+---
+sidebar_position: 1
+---
+
+# MSW Classes
+
+MSW classes are created in a similar style to in .mlua, with the `@` decorator getting a `Class` suffix:
+
+```ts
+@LogicClass
+class MyLogic extends Logic {
+    OnBeginPlay() {
+        print('a')
+    }
+}
+
+@ComponentClass
+class MyComponent extends Component {
+
+}
+```
+
+## Decorators
+
+MSW classes can use the usual decorators for methods, fields and event listeners:
+
+- `@Sync`
+- `@ExecSpace`
+- `@EventSender`
+- _⚠️ Attribute settings (`@DisplayName`, `@Description` etc.) are not yet implemented)_
+
+```ts
+@ComponentClass
+class MyComponent extends Component {
+    @Sync
+    MyField: string = 'a'
+
+    @ExecSpace('ServerOnly')
+    MyMethod() {
+
+    }
+
+    @EventSender('Self')
+    HandleButtonClickEvent(event: ButtonClickEvent) {
+
+    }
+}
+```
+
+## File Structure
+
+The `tsw` transpiler automatically extracts MSW classes before emitting them in separate `.mlua` outputs. This means that `.ts` files can freely mix one or more MSW classes with any number of globals, and that the `.ts` filename doesn't need to correlate to any MSW classes it contains:
+
+```ts
+// my-unrelated-filename.ts
+
+function FreeFunction() {
+    print('hi from free functin!')
+}
+
+@LogicClass
+class MyLogic extends Logic {
+    OnBeginPlay() {
+        FreeFunction()
+    }
+}
+
+@LogicClass
+class MyOtherLogic extends Logic {
+    OnBeginPlay() {
+        print('hi from other logic!')
+    }
+}
+```
+
+## Initialization Order
+
+- Methods and `OnBeginPlay` can safely use any globals (variables, free functions and non-msw classes)
+- MSW class fields can **not** reference globals
+- MSW classes have the same initialization rules as normal `.mlua`
