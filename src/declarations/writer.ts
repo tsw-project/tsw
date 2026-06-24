@@ -1,12 +1,12 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ScriptDeclaration } from "./ast";
-import { applyPatches } from "./patcher";
+import type { ScriptDeclaration } from "./ast.ts";
+import { applyPatches } from "./patcher.ts";
 import {
     renderDeclaration,
     renderIndexDeclaration,
     renderSupportDeclaration,
-} from "./render";
+} from "./render.ts";
 
 export async function writeDeclarations(
     outputDirectory: string,

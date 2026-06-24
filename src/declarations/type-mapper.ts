@@ -1,4 +1,4 @@
-import { must, splitTopLevel } from "./text";
+import { must, splitTopLevel } from "./text.ts";
 
 export function toReturnType(rawType: string): string {
     const parts = splitTopLevel(rawType);

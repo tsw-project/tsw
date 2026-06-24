@@ -4,9 +4,9 @@ import type {
     MemberDeclaration,
     ParameterDeclaration,
     ScriptDeclaration,
-} from "./ast";
-import { must, splitTopLevel } from "./text";
-import { toReturnType, toTypeScriptType } from "./type-mapper";
+} from "./ast.ts";
+import { must, splitTopLevel } from "./text.ts";
+import { toReturnType, toTypeScriptType } from "./type-mapper.ts";
 
 export async function parseDeclarationFile(
     sourcePath: string,

@@ -1,4 +1,4 @@
-import type { MemberPatch } from "./patcher";
+import type { MemberPatch } from "./patcher.ts";
 
 export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
     "Entity.GetComponent": {

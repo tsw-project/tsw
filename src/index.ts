@@ -1,6 +1,6 @@
 import { Command, Option } from "commander";
-import { generateDeclarations } from "./declarations";
-import { build, watch } from "./transpile";
+import { generateDeclarations } from "./declarations/index.ts";
+import { build, watch } from "./transpile/index.ts";
 
 function addWorkingDirectoryOptions(cmd: Command): Command {
     return cmd.addOption(

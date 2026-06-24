@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import * as ts from "typescript";
 import { Transpiler, transpileProject } from "typescript-to-lua";
-import { generateDeclarations } from "../declarations";
-import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
-import { createMswPlugin } from "./plugin";
-import { writeLualibBundleScript, LUALIB_SCRIPT_NAME } from "./lualib-wrapper";
+import { generateDeclarations } from "../declarations/index.ts";
+import { ensureOutputDirectory, writeCodeblock } from "./msw-files.ts";
+import { createMswPlugin } from "./plugin.ts";
+import { writeLualibBundleScript, LUALIB_SCRIPT_NAME } from "./lualib-wrapper.ts";
 
 function removeStaleOutputFiles(outDir: string, expectedFiles: Set<string>): void {
     if (!fs.existsSync(outDir)) return;

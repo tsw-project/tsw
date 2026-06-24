@@ -4,9 +4,9 @@ import { SourceNode } from "source-map";
 import * as ts from "typescript";
 import type { Plugin } from "typescript-to-lua";
 import * as tstl from "typescript-to-lua";
-import { isScriptClassWrapper, printMluaScript, wrapClassStatements } from "./mlua-emitter";
-import type { ScriptType } from "./msw-files";
-import { collectScriptClasses } from "./script-class";
+import { isScriptClassWrapper, printMluaScript, wrapClassStatements } from "./mlua-emitter.ts";
+import type { ScriptType } from "./msw-files.ts";
+import { collectScriptClasses } from "./script-class.ts";
 
 export interface MswPlugin {
     plugin: Plugin;

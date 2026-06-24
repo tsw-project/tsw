@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { writeCodeblock } from "./msw-files";
+import { writeCodeblock } from "./msw-files.ts";
 
 const BUNDLE_NAME = "lualib_bundle";
 export const LUALIB_SCRIPT_NAME = "LuaLib";

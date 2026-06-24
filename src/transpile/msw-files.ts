@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { generateContentId } from "./content-id";
+import { generateContentId } from "./content-id.ts";
 
 export type ScriptType = "Logic" | "Component" | "Event" | "Struct" | "ActionNode" | "DecoratorNode";
 

@@ -1,8 +1,8 @@
 import path from "node:path";
-import { findDeclarationFiles } from "./files";
-import { parseDeclarationFile } from "./parser";
-import { writeTsConfig } from "./tsconfig";
-import { writeDeclarations } from "./writer";
+import { findDeclarationFiles } from "./files.ts";
+import { parseDeclarationFile } from "./parser.ts";
+import { writeTsConfig } from "./tsconfig.ts";
+import { writeDeclarations } from "./writer.ts";
 
 export interface GenerateDeclarationOptions {
     workingDirectory: string;

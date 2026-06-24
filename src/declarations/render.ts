@@ -5,8 +5,8 @@ import type {
     MethodDeclaration,
     ParameterDeclaration,
     ScriptDeclaration,
-} from "./ast";
-import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class";
+} from "./ast.ts";
+import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class.ts";
 
 function renderDocComment(doc: DocComment | undefined, indent = ""): string {
     if (!doc) return "";

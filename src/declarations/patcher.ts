@@ -1,5 +1,5 @@
-import type { MethodDeclaration, ScriptDeclaration } from "./ast";
-import { PATCHES } from "./patches";
+import type { MethodDeclaration, ScriptDeclaration } from "./ast.ts";
+import { PATCHES } from "./patches.ts";
 
 export interface MemberPatch {
     // property fields

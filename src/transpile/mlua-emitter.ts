@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
-import type { ScriptClassInfo } from "./script-class";
-import { hasImmediateInit, resolveType } from "./type-resolver";
+import type { ScriptClassInfo } from "./script-class.ts";
+import { hasImmediateInit, resolveType } from "./type-resolver.ts";
 
 export const DUMMY_PARAM = "____MSW_CLASS____";
 
