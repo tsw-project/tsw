@@ -69,7 +69,6 @@ export async function build({
         experimentalDecorators: true,
         extension: "mlua",
         module: ts.ModuleKind.CommonJS,
-        moduleResolution: ts.ModuleResolutionKind.Classic,
         rootDir: scriptDir,
         outDir,
     });
@@ -151,7 +150,6 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
         experimentalDecorators: true,
         extension: "mlua",
         module: ts.ModuleKind.CommonJS,
-        moduleResolution: ts.ModuleResolutionKind.Classic,
         rootDir: scriptDir,
         outDir,
     } as unknown as ts.CompilerOptions;
