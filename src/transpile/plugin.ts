@@ -10,7 +10,10 @@ import {
     wrapClassStatements,
 } from "./mlua-emitter.ts";
 import type { ScriptType } from "./msw-files.ts";
-import { collectScriptClasses } from "./script-class.ts";
+import {
+    collectScriptClasses,
+    findScriptTypeDecorator,
+} from "./script-class.ts";
 
 export interface MswPlugin {
     plugin: Plugin;
@@ -134,11 +137,7 @@ export function createMswPlugin(outDir: string): MswPlugin {
                 node: ts.ClassDeclaration,
                 context: tstl.TransformationContext,
             ) {
-                const { infos } = collectScriptClasses(node.getSourceFile());
-                const isScriptClass = infos.some(
-                    (info) => info.className === node.name?.text,
-                );
-                if (!isScriptClass) {
+                if (!findScriptTypeDecorator(node)) {
                     return context.superTransformNode(node) as tstl.Statement[];
                 }
                 return wrapClassStatements(node, context);

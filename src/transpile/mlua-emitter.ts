@@ -67,6 +67,7 @@ function findLuaMethods(statements: tstl.Statement[]): Map<string, tstl.Block> {
         // biome-ignore lint/style/noNonNullAssertion: length already checked above
         const func = s.right[0]!;
         if (!tstl.isFunctionExpression(func)) continue;
+        if (!func.body) continue;
 
         map.set(key.value, func.body);
     }
@@ -90,7 +91,7 @@ export function extractWrappedStatements(
             fn.params[0]?.text === DUMMY_PARAM &&
             fn.params[1]?.text === className
         ) {
-            return fn.body.statements;
+            return fn.body?.statements ?? [];
         }
     }
     return undefined;
@@ -154,8 +155,8 @@ export function printMluaScript(
     // Statements to use for constructor body: drop super() call, then filter property assignments
     const constructorStatements = constructorBody
         ? (info.extendsName
-              ? constructorBody.statements.slice(1)
-              : [...constructorBody.statements]
+              ? getBlockStatements(constructorBody).slice(1)
+              : [...getBlockStatements(constructorBody)]
           ).filter((s) => !isSelfPropertyAssignment(s, propertyNames))
         : [];
 
@@ -202,13 +203,11 @@ export function printMluaScript(
     if (ctorDecl) {
         lines.push(`\tmethod void ${constructorMethodName}()`);
         if (constructorStatements.length > 0) {
-            // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(
+            const bodyStr = printStatements(
+                printer,
                 constructorStatements,
+                `${info.className}.${constructorMethodName}`,
             );
-            const bodyStr = printed
-                .map((n) => (typeof n === "string" ? n : String(n)))
-                .join("");
             for (const bodyLine of bodyStr.split("\n")) {
                 if (bodyLine.trim()) lines.push(`\t\t${bodyLine}`);
             }
@@ -275,14 +274,13 @@ export function printMluaScript(
         }
 
         const body = luaMethods.get(name);
-        if (body && body.statements.length > 0) {
-            // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(
-                body.statements,
+        const bodyStatements = body ? getBlockStatements(body) : [];
+        if (bodyStatements.length > 0) {
+            const bodyStr = printStatements(
+                printer,
+                bodyStatements,
+                `${info.className}.${name}`,
             );
-            const bodyStr = printed
-                .map((n) => (typeof n === "string" ? n : String(n)))
-                .join("");
             for (const bodyLine of bodyStr.split("\n")) {
                 if (bodyLine.trim()) lines.push(`\t\t${bodyLine}`);
             }
@@ -294,6 +292,26 @@ export function printMluaScript(
 
     lines.push("end");
     return lines.join("\n");
+}
+
+function getBlockStatements(block: tstl.Block): tstl.Statement[] {
+    return block.statements ?? [];
+}
+
+function printStatements(
+    printer: tstl.LuaPrinter,
+    statements: tstl.Statement[],
+    context: string,
+): string {
+    try {
+        // @ts-expect-error printStatementArray is protected in LuaPrinter
+        const printed: (string | object)[] =
+            printer.printStatementArray(statements);
+        return printed.map((n) => (typeof n === "string" ? n : String(n))).join("");
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to print ${context}: ${message}`);
+    }
 }
 
 // Returns true if the statement is a `self.<name> = ...` assignment for a known property name

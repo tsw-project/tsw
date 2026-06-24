@@ -84,13 +84,25 @@ export function renderSupportDeclaration(): string {
 ${decoratorDeclarations}
 
 
-declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
+type TSWMethodDecorator = (
+    targetOrValue: object | Function,
+    keyOrContext: string | symbol | ClassMethodDecoratorContext,
+    descriptor?: PropertyDescriptor,
+) => void;
+
+type TSWPropertyDecorator = (
+    targetOrValue: object | undefined,
+    keyOrContext: string | symbol | ClassFieldDecoratorContext,
+    descriptor?: PropertyDescriptor,
+) => void;
+
+declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): TSWMethodDecorator;
 
 /** Marks a method as an event handler. The method will be emitted as a \`handler\` block in mlua. */
-declare function EventSender(sender: "Self" | "Entity" | "Model" | "LocalPlayer" | "Service" | "Logic"): (target: any, key: string, descriptor: PropertyDescriptor) => void;
+declare function EventSender(sender: "Self" | "Entity" | "Model" | "LocalPlayer" | "Service" | "Logic"): TSWMethodDecorator;
 
 /** Marks a property as synchronized between server and client. */
-declare function Sync(target: any, propertyKey: string, descriptor?: PropertyDescriptor): void;
+declare const Sync: TSWPropertyDecorator;
 
 /** Lua print function. */
 declare function print(...args: any[]): void;

@@ -50,12 +50,16 @@ export function findScriptTypeDecorator(
     return undefined;
 }
 
-export function collectScriptClasses(sourceFile: ts.SourceFile): {
+export function collectScriptClasses(sourceFile: ts.SourceFile | undefined): {
     diagnostics: ts.Diagnostic[];
     infos: ScriptClassInfo[];
 } {
     const diagnostics: ts.Diagnostic[] = [];
     const infos: ScriptClassInfo[] = [];
+
+    if (sourceFile === undefined) {
+        return { diagnostics, infos };
+    }
 
     for (const statement of sourceFile.statements) {
         if (!ts.isClassDeclaration(statement)) continue;
