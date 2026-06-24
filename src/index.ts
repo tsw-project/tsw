@@ -24,14 +24,14 @@ async function main() {
         .description("MapleStory Worlds TypeScript toolchain.")
         .showHelpAfterError();
 
-    const declarationsCmd = program
-        .command("declarations")
+    const initCmd = program
+        .command("init")
         .description(
             "Generate TypeScript declarations from .d.mlua native scripts.",
         );
-    addWorkingDirectoryOptions(declarationsCmd);
-    declarationsCmd.action(async () => {
-        const opts = declarationsCmd.optsWithGlobals<{
+    addWorkingDirectoryOptions(initCmd);
+    initCmd.action(async () => {
+        const opts = initCmd.optsWithGlobals<{
             cwd: string;
             workingDirectory?: string;
         }>();
@@ -74,15 +74,9 @@ async function main() {
         await watch({ workingDirectory: resolveWorkingDirectory(opts) });
     });
 
-    // Legacy default: no subcommand runs declarations
-    program.action(async () => {
-        const opts = program.opts<{ cwd: string; workingDirectory?: string }>();
-        const result = await generateDeclarations({
-            workingDirectory: resolveWorkingDirectory(opts),
-        });
-        console.log(
-            `Generated ${result.declarationCount} TypeScript declaration files in ${result.outputDirectory}`,
-        );
+    program.action(() => {
+        program.outputHelp();
+        process.exit(1);
     });
 
     addWorkingDirectoryOptions(program);
