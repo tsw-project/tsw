@@ -59,15 +59,75 @@ function isCommonJsBoilerplate(statement: tstl.Statement): boolean {
     return false;
 }
 
+function collectScriptClassNames(program: ts.Program): Set<string> {
+    const classNames = new Set<string>();
+    for (const sourceFile of program.getSourceFiles()) {
+        if (sourceFile.isDeclarationFile) continue;
+
+        const { infos } = collectScriptClasses(sourceFile);
+        for (const info of infos) {
+            classNames.add(info.className);
+        }
+    }
+    return classNames;
+}
+
+function getNewExpressionClassName(
+    node: ts.NewExpression,
+    context: tstl.TransformationContext,
+): string | undefined {
+    const type = context.checker.getTypeAtLocation(node.expression);
+    const symbol = type.aliasSymbol ?? type.symbol;
+    if (symbol?.name !== undefined && symbol.name !== "__type") {
+        return symbol.name;
+    }
+
+    const expression = ts.skipOuterExpressions(node.expression);
+    return ts.isIdentifier(expression) ? expression.text : undefined;
+}
+
 export function createMswPlugin(outDir: string): MswPlugin {
     fs.mkdirSync(outDir, { recursive: true });
 
     const emittedScripts = new Map<string, ScriptType>();
     const processedSourceFiles = new Set<string>();
     const topLevelLuaByFile = new Map<string, TopLevelLuaChunk>();
+    const scriptClassNamesByProgram = new WeakMap<ts.Program, Set<string>>();
 
     const plugin: Plugin = {
         visitors: {
+            [ts.SyntaxKind.NewExpression](
+                node: ts.NewExpression,
+                context: tstl.TransformationContext,
+            ) {
+                let scriptClassNames = scriptClassNamesByProgram.get(
+                    context.program,
+                );
+                if (scriptClassNames === undefined) {
+                    scriptClassNames = collectScriptClassNames(context.program);
+                    scriptClassNamesByProgram.set(
+                        context.program,
+                        scriptClassNames,
+                    );
+                }
+
+                const className = getNewExpressionClassName(node, context);
+                if (
+                    className === undefined ||
+                    !scriptClassNames.has(className)
+                ) {
+                    return context.superTransformExpression(node);
+                }
+
+                return tstl.createCallExpression(
+                    context.transformExpression(node.expression),
+                    (node.arguments ?? []).map((arg) =>
+                        context.transformExpression(arg),
+                    ),
+                    node,
+                );
+            },
+
             [ts.SyntaxKind.ClassDeclaration](
                 node: ts.ClassDeclaration,
                 context: tstl.TransformationContext,
