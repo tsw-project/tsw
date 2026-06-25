@@ -50,6 +50,7 @@ type TileMapVersion = unknown;
 type Type = unknown;
 
 declare const _G: Record<string, any>;
+declare function isvalid<T>(value: T | undefined): value is T
 `;
 
 export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
