@@ -51,6 +51,7 @@ type Type = unknown;
 
 declare const _G: Record<string, any>;
 declare function isvalid<T>(value: T | undefined): value is T
+declare const senderUserId: string | undefined
 `;
 
 export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
