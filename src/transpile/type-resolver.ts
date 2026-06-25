@@ -44,6 +44,7 @@ export function resolveType(
     program: ts.Program,
     node: ts.Node,
     isParam = false,
+    knownMswTypes?: Set<string>,
 ): string {
     const raw = getRawTypeString(program, node)
         .replace(/\s+/g, "")
@@ -68,8 +69,8 @@ export function resolveType(
     // JS built-ins that have no mlua equivalent
     if (baseName === "Promise") return "any";
 
-    // Plain identifier types (classes, event types, etc.) pass through as-is
-    if (/^[A-Z][A-Za-z0-9]*$/.test(baseName)) return raw;
+    // Known MSW types (built-in from .d.mlua and user-defined script classes) pass through
+    if (knownMswTypes !== undefined && knownMswTypes.has(baseName)) return raw;
 
     return "any";
 }

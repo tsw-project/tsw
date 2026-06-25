@@ -74,6 +74,35 @@ function collectScriptClassNames(program: ts.Program): Set<string> {
     return classNames;
 }
 
+function isNativeTsFile(fileName: string): boolean {
+    const normalized = fileName.replace(/\\/g, "/");
+    return normalized.includes("/NativeTS/");
+}
+
+function collectAllMswTypeNames(program: ts.Program): Set<string> {
+    const typeNames = new Set<string>();
+    for (const sourceFile of program.getSourceFiles()) {
+        if (sourceFile.isDeclarationFile) {
+            if (!isNativeTsFile(sourceFile.fileName)) continue;
+            for (const statement of sourceFile.statements) {
+                if (ts.isClassDeclaration(statement) && statement.name) {
+                    typeNames.add(statement.name.text);
+                }
+                if (ts.isEnumDeclaration(statement) && statement.name) {
+                    typeNames.add(statement.name.text);
+                }
+            }
+            continue;
+        }
+
+        const { infos } = collectScriptClasses(sourceFile);
+        for (const info of infos) {
+            typeNames.add(info.className);
+        }
+    }
+    return typeNames;
+}
+
 function getNewExpressionClassName(
     node: ts.NewExpression,
     context: tstl.TransformationContext,
@@ -95,6 +124,7 @@ export function createMswPlugin(outDir: string): MswPlugin {
     const emittedScriptCode = new Map<string, string>();
     const topLevelLuaByFile = new Map<string, TopLevelLuaChunk>();
     const scriptClassNamesByProgram = new WeakMap<ts.Program, Set<string>>();
+    const mswTypeNamesByProgram = new WeakMap<ts.Program, Set<string>>();
 
     const plugin: Plugin = {
         visitors: {
@@ -154,6 +184,12 @@ export function createMswPlugin(outDir: string): MswPlugin {
             const { infos } = collectScriptClasses(sourceFile);
             const classNames = new Set(infos.map((i) => i.className));
 
+            let knownMswTypes = mswTypeNamesByProgram.get(program);
+            if (knownMswTypes === undefined) {
+                knownMswTypes = collectAllMswTypeNames(program);
+                mswTypeNamesByProgram.set(program, knownMswTypes);
+            }
+
             // Write each script class directly to outDir/<ClassName>.mlua
             for (const info of infos) {
                 const code = printMluaScript(
@@ -162,6 +198,7 @@ export function createMswPlugin(outDir: string): MswPlugin {
                     program,
                     emitHost,
                     sourceFileName,
+                    knownMswTypes,
                 );
                 if (code) {
                     emittedScriptCode.set(info.className, code);

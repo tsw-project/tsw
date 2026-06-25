@@ -124,6 +124,7 @@ export function printMluaScript(
     program: ts.Program,
     emitHost: tstl.EmitHost,
     sourceFileName: string,
+    knownMswTypes?: Set<string>,
 ): string {
     const wrappedStatements = extractWrappedStatements(file, info.className);
     if (wrappedStatements === undefined) return "";
@@ -167,7 +168,7 @@ export function printMluaScript(
             ? member.name.text
             : undefined;
         if (!name) continue;
-        const typeStr = resolveType(program, member);
+        const typeStr = resolveType(program, member, false, knownMswTypes);
         const isReadonly =
             member.modifiers?.some(
                 (m) => m.kind === ts.SyntaxKind.ReadonlyKeyword,
@@ -184,7 +185,7 @@ export function printMluaScript(
         let propInit = "";
         if (!isReadonly) {
             if (hasImmediateInit(typeStr) || member.initializer) {
-                const val = member.initializer
+                const val = member.initializer && !isUndefinedLiteral(member.initializer)
                     ? member.initializer.getText(sourceFile)
                     : "nil";
                 propInit = ` = ${val}`;
@@ -228,11 +229,11 @@ export function printMluaScript(
             member.modifiers?.some(
                 (m) => m.kind === ts.SyntaxKind.StaticKeyword,
             ) ?? false;
-        const returnType = resolveType(program, member);
+        const returnType = resolveType(program, member, false, knownMswTypes);
         const params = member.parameters
             .map((p) => {
                 const pName = ts.isIdentifier(p.name) ? p.name.text : "_";
-                const typeStr = resolveType(program, p, true);
+                const typeStr = resolveType(program, p, true, knownMswTypes);
                 if (p.initializer) {
                     return `${typeStr} ${pName} = ${p.initializer.getText(sourceFile)}`;
                 }
@@ -254,7 +255,7 @@ export function printMluaScript(
             // The event type comes from the first parameter's type annotation
             const firstParam = member.parameters[0];
             const eventType = firstParam
-                ? resolveType(program, firstParam, true)
+                ? resolveType(program, firstParam, true, knownMswTypes)
                 : "any";
             const eventParamName =
                 firstParam && ts.isIdentifier(firstParam.name)
@@ -327,6 +328,11 @@ function isSelfPropertyAssignment(
         return false;
     if (!tstl.isStringLiteral(lhs.index)) return false;
     return propertyNames.has(lhs.index.value);
+}
+
+function isUndefinedLiteral(node: ts.Expression): boolean {
+    if (ts.isNonNullExpression(node)) return isUndefinedLiteral(node.expression);
+    return ts.isIdentifier(node) && node.text === "undefined";
 }
 
 function getDecorators(node: ts.HasModifiers): string[] {
