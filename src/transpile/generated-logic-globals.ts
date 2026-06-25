@@ -19,6 +19,7 @@ function renderGeneratedLogicGlobals(classNames: Iterable<string>): string {
     return [
         GENERATED_HEADER,
         "// Provides typed MSW Logic globals for TypeScript code.",
+        "declare const _G: Record<string, any>;",
         ...declarations,
         "",
     ].join("\n");
