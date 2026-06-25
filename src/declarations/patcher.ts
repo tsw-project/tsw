@@ -13,11 +13,13 @@ export interface MemberPatch {
     type?: string;
 }
 
-
 export function applyPatches(declarations: ScriptDeclaration[]): void {
     for (const decl of declarations) {
         for (const member of decl.members) {
-            if (member.kind === "enum-member" || member.kind === "constructor") {
+            if (
+                member.kind === "enum-member" ||
+                member.kind === "constructor"
+            ) {
                 continue;
             }
 
@@ -29,7 +31,8 @@ export function applyPatches(declarations: ScriptDeclaration[]): void {
             for (const patch of patches) {
                 if (member.kind === "property") {
                     if (patch.type !== undefined) member.type = patch.type;
-                    if (patch.readonly !== undefined) member.readonly = patch.readonly;
+                    if (patch.readonly !== undefined)
+                        member.readonly = patch.readonly;
                 } else if (member.kind === "method") {
                     applyMethodPatch(member, patch);
                 }
@@ -45,7 +48,8 @@ function applyMethodPatch(member: MethodDeclaration, patch: MemberPatch): void {
     }
 
     if (patch.returnType !== undefined) member.returnType = patch.returnType;
-    if (patch.rawSignature !== undefined) member.rawSignature = patch.rawSignature;
+    if (patch.rawSignature !== undefined)
+        member.rawSignature = patch.rawSignature;
     if (patch.type !== undefined) member.returnType = patch.type;
 
     if (patch.parameters) {
@@ -53,7 +57,8 @@ function applyMethodPatch(member: MethodDeclaration, patch: MemberPatch): void {
             const param = member.parameters[paramPatch.index];
             if (!param) continue;
             if (paramPatch.type !== undefined) param.type = paramPatch.type;
-            if (paramPatch.optional !== undefined) param.optional = paramPatch.optional;
+            if (paramPatch.optional !== undefined)
+                param.optional = paramPatch.optional;
         }
     }
 }

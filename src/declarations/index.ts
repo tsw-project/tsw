@@ -23,7 +23,11 @@ export async function generateDeclarations({
         resolvedWorkingDirectory,
         nativeScriptsPath,
     );
-    const outputDirectory = path.join(resolvedWorkingDirectory, "Environment", "NativeTS");
+    const outputDirectory = path.join(
+        resolvedWorkingDirectory,
+        "Environment",
+        "NativeTS",
+    );
 
     let sourceFiles: string[];
     try {

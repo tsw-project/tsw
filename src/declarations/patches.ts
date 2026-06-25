@@ -64,6 +64,6 @@ export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
     "Entity.ConnectEvent": {
         parameterTypes: ["Type", "IScriptFunction"],
         rawSignature:
-            "ConnectEvent<T>(eventType: abstract new (...args: any[]) => T, eventHandler: (event: T) => void): EventHandlerBase"
-    }
+            "ConnectEvent<T>(eventType: abstract new (...args: any[]) => T, eventHandler: (event: T) => void): EventHandlerBase",
+    },
 };

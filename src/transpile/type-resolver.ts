@@ -70,7 +70,7 @@ export function resolveType(
     if (baseName === "Promise") return "any";
 
     // Known MSW types (built-in from .d.mlua and user-defined script classes) pass through
-    if (knownMswTypes !== undefined && knownMswTypes.has(baseName)) return raw;
+    if (knownMswTypes?.has(baseName)) return raw;
 
     return "any";
 }

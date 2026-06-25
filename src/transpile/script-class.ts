@@ -8,7 +8,7 @@ export const SCRIPT_TYPE_DECORATORS = new Set([
     "BTNodeClass",
     "ItemClass",
     "StateClass",
-    "ConditionClass"
+    "ConditionClass",
 ]);
 
 type ScriptTypeMapping = string | Record<string, string>;
@@ -90,7 +90,10 @@ export function collectScriptClasses(sourceFile: ts.SourceFile | undefined): {
         const typeMapping = DECORATOR_TO_SCRIPT_TYPE[decoratorName];
         let scriptType: string;
         if (typeof typeMapping === "object") {
-            const resolved = extendsName !== undefined ? typeMapping[extendsName] : undefined;
+            const resolved =
+                extendsName !== undefined
+                    ? typeMapping[extendsName]
+                    : undefined;
             if (resolved === undefined) {
                 diagnostics.push(
                     makeDiagnostic(

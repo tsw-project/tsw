@@ -181,13 +181,17 @@ export function printMluaScript(
             lines.push(`\t${decorator}`);
         }
         const propPrefix = `${isStatic ? "static " : ""}${isReadonly ? "readonly " : ""}`;
-        const baseTypeName = typeStr.includes("<") ? typeStr.slice(0, typeStr.indexOf("<")) : typeStr;
+        const baseTypeName = typeStr.includes("<")
+            ? typeStr.slice(0, typeStr.indexOf("<"))
+            : typeStr;
         let propInit = "";
         if (!isReadonly && baseTypeName !== "SyncTable") {
             if (hasImmediateInit(typeStr) || member.initializer) {
-                const val = member.initializer && !isUndefinedLiteral(member.initializer)
-                    ? member.initializer.getText(sourceFile)
-                    : "nil";
+                const val =
+                    member.initializer &&
+                    !isUndefinedLiteral(member.initializer)
+                        ? member.initializer.getText(sourceFile)
+                        : "nil";
                 propInit = ` = ${val}`;
             } else {
                 propInit = " = nil";
@@ -308,7 +312,9 @@ function printStatements(
         // @ts-expect-error printStatementArray is protected in LuaPrinter
         const printed: (string | object)[] =
             printer.printStatementArray(statements);
-        return printed.map((n) => (typeof n === "string" ? n : String(n))).join("");
+        return printed
+            .map((n) => (typeof n === "string" ? n : String(n)))
+            .join("");
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`Failed to print ${context}: ${message}`);
@@ -331,7 +337,8 @@ function isSelfPropertyAssignment(
 }
 
 function isUndefinedLiteral(node: ts.Expression): boolean {
-    if (ts.isNonNullExpression(node)) return isUndefinedLiteral(node.expression);
+    if (ts.isNonNullExpression(node))
+        return isUndefinedLiteral(node.expression);
     return ts.isIdentifier(node) && node.text === "undefined";
 }
 

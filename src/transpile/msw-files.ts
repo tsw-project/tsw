@@ -2,7 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { generateContentId } from "./content-id.ts";
 
-export type ScriptType = "Logic" | "Component" | "Event" | "Struct" | "ActionNode" | "DecoratorNode";
+export type ScriptType =
+    | "Logic"
+    | "Component"
+    | "Event"
+    | "Struct"
+    | "ActionNode"
+    | "DecoratorNode";
 
 const CODEBLOCK_TYPE: Record<ScriptType, number> = {
     Component: 1,

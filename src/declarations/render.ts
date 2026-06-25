@@ -1,3 +1,4 @@
+import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class.ts";
 import type {
     DocComment,
     EnumMemberDeclaration,
@@ -6,7 +7,6 @@ import type {
     ParameterDeclaration,
     ScriptDeclaration,
 } from "./ast.ts";
-import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class.ts";
 
 function renderDocComment(doc: DocComment | undefined, indent = ""): string {
     if (!doc) return "";

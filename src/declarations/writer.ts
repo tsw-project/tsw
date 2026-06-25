@@ -1,8 +1,8 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ScriptDeclaration } from "./ast.ts";
-import { SUPPORT } from "./patches.ts";
 import { applyPatches } from "./patcher.ts";
+import { SUPPORT } from "./patches.ts";
 import {
     renderDeclaration,
     renderIndexDeclaration,
