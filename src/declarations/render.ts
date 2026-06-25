@@ -96,7 +96,7 @@ type TSWPropertyDecorator = (
     descriptor?: PropertyDescriptor,
 ) => void;
 
-declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): TSWMethodDecorator;
+declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "Client" | "Server" | "All"): TSWMethodDecorator;
 
 /** Marks a method as an event handler. The method will be emitted as a \`handler\` block in mlua. */
 declare function EventSender(sender: "Self" | "Entity" | "Model" | "LocalPlayer" | "Service" | "Logic"): TSWMethodDecorator;
