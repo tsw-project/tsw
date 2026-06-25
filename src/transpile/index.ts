@@ -15,45 +15,110 @@ import {
     LUALIB_SCRIPT_NAME,
     writeLualibBundleScript,
 } from "./lualib-wrapper.ts";
-import { ensureOutputDirectory, writeCodeblock } from "./msw-files.ts";
+import {
+    ensureOutputDirectory,
+    type ScriptType,
+    writeCodeblock,
+} from "./msw-files.ts";
 import { createMswPlugin } from "./plugin.ts";
+
+const MSW_CLASS_DIR_NAME = "Class";
 
 function removeStaleOutputFiles(
     outDir: string,
     expectedFiles: Set<string>,
 ): void {
     if (!fs.existsSync(outDir)) return;
-    for (const entry of fs.readdirSync(outDir)) {
-        if (
-            (entry.endsWith(".mlua") || entry.endsWith(".codeblock")) &&
-            !expectedFiles.has(entry)
-        ) {
-            fs.unlinkSync(path.join(outDir, entry));
+
+    function removeStaleFiles(dir: string): void {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const entryPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                removeStaleFiles(entryPath);
+                continue;
+            }
+
+            if (!entry.isFile()) continue;
+            if (
+                !entry.name.endsWith(".mlua") &&
+                !entry.name.endsWith(".codeblock")
+            ) {
+                continue;
+            }
+
+            const rel = path.relative(outDir, entryPath);
+            if (!expectedFiles.has(rel)) {
+                fs.unlinkSync(entryPath);
+            }
         }
     }
+
+    removeStaleFiles(outDir);
 }
 
 function expectedOutputFiles(
-    emittedScripts: Map<string, unknown>,
+    emittedScripts: Map<string, ScriptType>,
 ): Set<string> {
     const files = new Set<string>();
     files.add(`${LUALIB_SCRIPT_NAME}.mlua`);
     files.add(`${LUALIB_SCRIPT_NAME}.codeblock`);
     files.add(`${TSW_MANAGER_SCRIPT_NAME}.mlua`);
     files.add(`${TSW_MANAGER_SCRIPT_NAME}.codeblock`);
-    for (const className of emittedScripts.keys()) {
-        files.add(`${className}.mlua`);
-        files.add(`${className}.codeblock`);
+    for (const [className, scriptType] of emittedScripts) {
+        files.add(getMswClassOutputRelPath(className, scriptType, "mlua"));
+        files.add(getMswClassOutputRelPath(className, scriptType, "codeblock"));
     }
     return files;
 }
 
+function getMswClassOutputDir(outDir: string, scriptType: ScriptType): string {
+    return path.join(outDir, MSW_CLASS_DIR_NAME, scriptType);
+}
+
+function getMswClassOutputRelPath(
+    className: string,
+    scriptType: ScriptType,
+    extension: "mlua" | "codeblock",
+): string {
+    return path.join(
+        MSW_CLASS_DIR_NAME,
+        scriptType,
+        `${className}.${extension}`,
+    );
+}
+
+function getMswClassOutputPath(
+    outDir: string,
+    className: string,
+    scriptType: ScriptType,
+    extension: "mlua" | "codeblock",
+): string {
+    return path.join(
+        outDir,
+        getMswClassOutputRelPath(className, scriptType, extension),
+    );
+}
+
 function writeEmittedScriptCode(
+    rootDesk: string,
     outDir: string,
     emittedScriptCode: Map<string, string>,
+    emittedScripts: Map<string, ScriptType>,
 ): void {
     for (const [className, code] of emittedScriptCode) {
-        fs.writeFileSync(path.join(outDir, `${className}.mlua`), code);
+        const scriptType = emittedScripts.get(className);
+        if (scriptType === undefined) {
+            throw new Error(
+                `Missing script type for emitted class ${className}`,
+            );
+        }
+
+        const classDir = getMswClassOutputDir(outDir, scriptType);
+        ensureOutputDirectory(rootDesk, classDir);
+        fs.writeFileSync(
+            getMswClassOutputPath(outDir, className, scriptType, "mlua"),
+            code,
+        );
     }
 }
 
@@ -148,15 +213,18 @@ export async function build({
         throw new Error(messages.join("\n"));
     }
 
-    writeEmittedScriptCode(outDir, emittedScriptCode);
+    const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
+    ensureOutputDirectory(rootDesk, outDir);
+
+    writeEmittedScriptCode(rootDesk, outDir, emittedScriptCode, emittedScripts);
     writeLualibBundleScript(outDir);
     writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
-    const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
-    ensureOutputDirectory(rootDesk, outDir);
     for (const [className, scriptType] of emittedScripts) {
+        const classDir = getMswClassOutputDir(outDir, scriptType);
+        ensureOutputDirectory(rootDesk, classDir);
         writeCodeblock(
-            path.join(outDir, `${className}.codeblock`),
+            getMswClassOutputPath(outDir, className, scriptType, "codeblock"),
             className,
             scriptType,
         );
@@ -247,15 +315,28 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
                 return;
             }
 
-            writeEmittedScriptCode(outDir, emittedScriptCode);
+            const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
+            ensureOutputDirectory(rootDesk, outDir);
+
+            writeEmittedScriptCode(
+                rootDesk,
+                outDir,
+                emittedScriptCode,
+                emittedScripts,
+            );
             writeLualibBundleScript(outDir);
             writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
-            const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
-            ensureOutputDirectory(rootDesk, outDir);
             for (const [className, scriptType] of emittedScripts) {
+                const classDir = getMswClassOutputDir(outDir, scriptType);
+                ensureOutputDirectory(rootDesk, classDir);
                 writeCodeblock(
-                    path.join(outDir, `${className}.codeblock`),
+                    getMswClassOutputPath(
+                        outDir,
+                        className,
+                        scriptType,
+                        "codeblock",
+                    ),
                     className,
                     scriptType,
                 );
