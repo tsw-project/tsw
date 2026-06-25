@@ -112,6 +112,8 @@ interface LuaTable {
     readonly [key: number]: unknown;
 }
 
+type SyncTable<K extends keyof any, V> = Record<K, V>;
+
 type EditorAlignmentType = unknown;
 type EditorSystemPalette = unknown;
 type EventHandlerBase = unknown;

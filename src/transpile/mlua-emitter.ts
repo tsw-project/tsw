@@ -181,9 +181,9 @@ export function printMluaScript(
             lines.push(`\t${decorator}`);
         }
         const propPrefix = `${isStatic ? "static " : ""}${isReadonly ? "readonly " : ""}`;
-        // Types that need a concrete initializer get one; others get = nil; readonly gets nothing
+        const baseTypeName = typeStr.includes("<") ? typeStr.slice(0, typeStr.indexOf("<")) : typeStr;
         let propInit = "";
-        if (!isReadonly) {
+        if (!isReadonly && baseTypeName !== "SyncTable") {
             if (hasImmediateInit(typeStr) || member.initializer) {
                 const val = member.initializer && !isUndefinedLiteral(member.initializer)
                     ? member.initializer.getText(sourceFile)
