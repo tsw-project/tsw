@@ -1,6 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ScriptDeclaration } from "./ast.ts";
+import { SUPPORT } from "./patches.ts";
 import { applyPatches } from "./patcher.ts";
 import {
     renderDeclaration,
@@ -19,7 +20,7 @@ export async function writeDeclarations(
     const references: string[] = ["support.d.ts"];
     await writeFile(
         path.join(outputDirectory, "support.d.ts"),
-        renderSupportDeclaration(),
+        renderSupportDeclaration(SUPPORT),
         "utf8",
     );
 
