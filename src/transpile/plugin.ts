@@ -61,19 +61,6 @@ function isCommonJsBoilerplate(statement: tstl.Statement): boolean {
     return false;
 }
 
-function collectScriptClassNames(program: ts.Program): Set<string> {
-    const classNames = new Set<string>();
-    for (const sourceFile of program.getSourceFiles()) {
-        if (sourceFile.isDeclarationFile) continue;
-
-        const { infos } = collectScriptClasses(sourceFile);
-        for (const info of infos) {
-            classNames.add(info.className);
-        }
-    }
-    return classNames;
-}
-
 function isNativeTsFile(fileName: string): boolean {
     const normalized = fileName.replace(/\\/g, "/");
     return normalized.includes("/NativeTS/");
@@ -123,7 +110,6 @@ export function createMswPlugin(outDir: string): MswPlugin {
     const emittedScripts = new Map<string, ScriptType>();
     const emittedScriptCode = new Map<string, string>();
     const topLevelLuaByFile = new Map<string, TopLevelLuaChunk>();
-    const scriptClassNamesByProgram = new WeakMap<ts.Program, Set<string>>();
     const mswTypeNamesByProgram = new WeakMap<ts.Program, Set<string>>();
 
     const plugin: Plugin = {
@@ -132,22 +118,14 @@ export function createMswPlugin(outDir: string): MswPlugin {
                 node: ts.NewExpression,
                 context: tstl.TransformationContext,
             ) {
-                let scriptClassNames = scriptClassNamesByProgram.get(
-                    context.program,
-                );
-                if (scriptClassNames === undefined) {
-                    scriptClassNames = collectScriptClassNames(context.program);
-                    scriptClassNamesByProgram.set(
-                        context.program,
-                        scriptClassNames,
-                    );
+                let knownMswTypes = mswTypeNamesByProgram.get(context.program);
+                if (knownMswTypes === undefined) {
+                    knownMswTypes = collectAllMswTypeNames(context.program);
+                    mswTypeNamesByProgram.set(context.program, knownMswTypes);
                 }
 
                 const className = getNewExpressionClassName(node, context);
-                if (
-                    className === undefined ||
-                    !scriptClassNames.has(className)
-                ) {
+                if (className === undefined || !knownMswTypes.has(className)) {
                     return context.superTransformExpression(node);
                 }
 
