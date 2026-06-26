@@ -1,12 +1,28 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { writeCodeblock } from "./msw-files.ts";
 
 const BUNDLE_NAME = "lualib_bundle";
 export const LUALIB_SCRIPT_NAME = "LuaLib";
 export const LUALIB_LOAD_METHOD = "LoadLuaLib";
 const require = createRequire(import.meta.url);
+
+/** Extra Lua chunks appended inside LoadLuaLib() after the stdlib globals are set up. */
+export const LUA_EXTRA: string[] = [];
+
+const _luaExtraDir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../lua-extra",
+);
+if (fs.existsSync(_luaExtraDir)) {
+    for (const file of fs.readdirSync(_luaExtraDir).sort()) {
+        if (file.endsWith(".lua")) {
+            LUA_EXTRA.push(fs.readFileSync(path.join(_luaExtraDir, file), "utf8"));
+        }
+    }
+}
 
 /**
  * Parses the exported names from the `return { key = value, ... }` table at
@@ -51,6 +67,13 @@ export function writeLualibBundleScript(outDir: string): void {
         .map((n) => `\t\t_G["${n}"] = ${n}`)
         .join("\n");
 
+    const extraBody = LUA_EXTRA.map((chunk) =>
+        chunk
+            .split("\n")
+            .map((line) => (line.length > 0 ? `\t\t${line}` : ""))
+            .join("\n"),
+    ).join("\n");
+
     const mlua = [
         `@Logic`,
         `script ${LUALIB_SCRIPT_NAME} extends Logic`,
@@ -60,6 +83,7 @@ export function writeLualibBundleScript(outDir: string): void {
         `\t\t_G["__lualib_loaded"] = true`,
         indentedBody,
         globalAssignments,
+        ...(extraBody ? [extraBody] : []),
         `\tend`,
         ``,
         `end`,
