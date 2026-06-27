@@ -1,6 +1,6 @@
 # tsw
 
-_⚠️Warning: This project is very early in development and should not be used in production environments.._
+_⚠️Warning: This project is very early in development and should not be used in production environments._
 
 `tsw` is a TypeScript-to-MapleStory Worlds (.mlua) transpiler, allowing more powerful type-checking capabilities and various other quality of life improvements.
 
