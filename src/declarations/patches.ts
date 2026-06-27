@@ -1,5 +1,9 @@
 import type { MemberPatch } from "./patcher.ts";
 
+export const IDENTIFIER_RENAMES: Record<string, string> = {
+    __enum: "enum",
+};
+
 export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
     "Entity.GetComponent": {
         parameterTypes: ["Type"],

@@ -3,6 +3,7 @@ import { SourceNode } from "source-map";
 import * as ts from "typescript";
 import type { Plugin } from "typescript-to-lua";
 import * as tstl from "typescript-to-lua";
+import { IDENTIFIER_RENAMES } from "../declarations/patches.ts";
 import type { TopLevelLuaChunk } from "./global-wrapper.ts";
 import {
     isScriptClassWrapper,
@@ -114,6 +115,17 @@ export function createMswPlugin(outDir: string): MswPlugin {
 
     const plugin: Plugin = {
         visitors: {
+            [ts.SyntaxKind.Identifier](
+                node: ts.Identifier,
+                context: tstl.TransformationContext,
+            ) {
+                const renamed = IDENTIFIER_RENAMES[node.text];
+                if (renamed !== undefined) {
+                    return tstl.createIdentifier(renamed, node);
+                }
+                return context.superTransformExpression(node);
+            },
+
             [ts.SyntaxKind.NewExpression](
                 node: ts.NewExpression,
                 context: tstl.TransformationContext,
