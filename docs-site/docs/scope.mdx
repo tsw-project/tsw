@@ -1,0 +1,171 @@
+---
+sidebar_position: 4
+---
+
+# Scope
+
+This document details the features we deliberately exclude from `tsw`. As a compatibility layer, `tsw` is designed to:
+
+* Allow expressing as much of the TypeScript language in MSW as possible.
+* Allow expressing as much of the `.mlua` format directly in TypeScript as possible.
+* Accurately represent the true signatures of the MSW API.
+* Make it easy for developers to debug the transpiled `.mlua` and map it back to the source code.
+
+To achieve this, we **do**:
+
+* [Patch](./patches/#type-map.json) parsed `.d.mlua` files with more accurate type information.
+* [Expose](https://github.com/tsw-project/tsw/tree/main/patch/types/Lua) the Lua API provided by MSW.
+
+Conversely, we **will not**:
+
+* Try to support TypeScript/JavaScript features that `Lua` or `mlua` cannot reliably express.
+* Try to support TypeScript features that would make the output `.mlua` overly difficult to read or understand.
+* Add utilities that are not immediately related to the `mlua` language or the MSW api (custom encoding schemes etc.).
+
+---
+
+## JSON
+
+Just like upstream TSTL, we do not include support for TypeScript's global `JSON` object. We choose not to do this because Lua cannot reliably express JSON structures as tables; without special sentinel values, Lua \<-\> JSON roundtrips will consistently fail on `null` array entries and empty arrays.
+
+Instead, we leave it up to users to install and configure a JSON library of their choice, allowing them to decide exactly how to handle this discrepancy.
+
+---
+
+## import / export / require
+
+MapleStory Worlds `mlua` conventions generally favor the global scope and offer no built-in support for `require`. Furthermore, MSW class files actively hinder the use of file-scoped variables that most `require` conventions rely on, as the classes themselves are always instantiated in the global scope.
+
+Because of this, the only way to map module-based TypeScript input into the `mlua` format is to simulate module behavior. 
+
+### MSW Classes
+
+There is no way to let MSW classes interact with TypeScript's module system without forcing them into a module scope. However, in `mlua`, MSW classes are always globally scoped, meaning a module-based representation would misrepresent their actual behavior:
+
+```ts
+// In TypeScript, this looks module-scoped
+@ComponentClass
+export class MyComponent extends Component {}
+
+```
+
+```lua
+-- But in mlua, it is global
+@Component
+script MyComponent : Component {}
+
+```
+
+### Module Access
+
+While allowing MSW classes to pretend to be part of the module system might seem like an acceptable tradeoff, supporting modules offers little benefit if we treat all other module-scoped identifiers the same way.
+
+We considered two primary implementation approaches, both of which introduce significant downsides when integrated into the `mlua` runtime.
+
+#### 1. Module Logics
+
+One approach is to organize modules into `mlua` `Logic` components that are automatically loaded in a specific, reliable order.
+
+**MyInputFile.ts**
+
+```ts
+export function myFunction () {}
+
+```
+
+**output.mlua**
+
+```
+@Logic
+script MyInputFile : Logic {
+    Module: any = nil
+    Loaded: boolean = false
+
+    method _Load() {
+        if self.Loaded then
+            return
+        end
+        self.Module = {}
+        self.Module["myFunction"] = function() end
+    }
+}
+
+```
+
+Any component that needs to access this module would do so via the guarded `_Load` method. However, because `mlua` lacks a true file-level scope for MSW classes, we cannot scope modules to a file. This means every single MSW class method would need to invoke `_Load` on every call for every module it depends on. This introduces a penalty of one function call plus one extra table lookup per module invocation.
+
+We could eliminate the extra function call by injecting full module initialization into every `OnBeginPlay` method (similar to current behavior). However, this leaves the same limitation: you cannot safely touch modules from the file level, as you run the risk of leaking into a method that executes before the module finishes loading. It also still costs one extra table lookup per invocation compared to a native global lookup.
+
+Additionally, both variants result in transpiled methods cluttered with boilerplates like this:
+
+```mlua
+@Logic
+script MyLogic : Logic {
+    method MyMethod() {
+        local __path_to_my_library = Path_To_My_Library.Module
+        local __path_to_my_other_library = Path_To_My_Other_Library.Module
+        local __path_to_my_third_library = Path_To_My_Third_Library.Module
+
+        -- actual business logic
+    }
+
+    method MyOtherMethod() {
+        local __path_to_my_library = Path_To_My_Library.Module
+        local __path_to_my_other_library = Path_To_My_Other_Library.Module
+        local __path_to_my_fourth_library = Path_To_My_Fourth_Library.Module
+        local __path_to_my_fifth_library = Path_To_My_Fifth_Library.Module
+
+        -- actual business logic
+    }
+}
+
+```
+
+#### 2. Name Mangling
+
+The alternative approach is to name-mangle every single module identifier directly into the global environment (`_G`). Compared to the Module Logics approach, this enables reliable initialization between global variables across different files/modules, matches current lookup performance, and keeps MSW class methods clean of inline import blocks.
+
+The downside is that every module identifier must be mangled. This results in transpiled variable and function names containing either unreadable hashes (e.g., `MyFunction_x19B83AF19C3()`) or long strings encoding their entire file path (e.g., `The_Full_Path_To_The_File_That_Contains_MyFunction()`). Because these names propagate through every definition and invocation, the transpiled output becomes practically unreadable.
+
+##### path/to/file.ts
+
+```ts
+export function calculateDamage(base: number): number {
+    return base * 1.5;
+}
+
+@ComponentClass
+export class Player extends Component {
+    takeDamage() {
+        const finalDamage = calculateDamage(100);
+    }
+}
+```
+
+##### path/to/file.mlua
+
+```mlua
+@Logic
+script Path_To_File_Logic : Logic {
+    void Load() {
+        _G["__path__to__file__calculateDamage"] = function(base)
+            return base * 1.5
+        end
+    }
+}
+```
+
+##### Class/Component/Player.mlua
+
+```mlua
+@Component
+script Player extends Component {
+    method void takeDamage() {
+        local finalDamage = __path__to__file__calculateDamage(100)
+    }
+}
+```
+
+### Conclusion
+
+Since both approaches introduce heavy architectural penalties to simulate a convention that `mlua` fundamentally does not support, we have concluded that the benefits of supporting `import`/`export` do not justify the cost.

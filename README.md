@@ -12,26 +12,21 @@ _⚠️Warning: This project is very early in development and should not be used
 
 `tsw` supports a subset of _TypeScript_ and _TypeScriptToLua_ functionality that is compatible with the `.mlua` format.
 
-| Icon | Meaning       |
-|------|---------------|
-| ✅  | Supported     |
-| 🚧  | Planned       |
-| ❌  | Won't support |
-
 | Feature                                     | Status  | Notes                       |
 |---------------------------------------------|---------|-----------------------------|
-| MSW Classes (`Logic`, `Component` etc.)     | ✅      |                             |
-| MSW Decorators (`@Sync`, `@ExecSpace` etc.) | ✅      |                             |
-| Free functions                              | ✅      |                             |
-| Global variables                            | ✅      |                             |
-| Classes                                     | ✅      |                             |
+| MSW Classes (`Logic`, `Component` etc.)     | ✅      | [Documentation](https://tsw-project.github.io/tsw/docs/msw-class)                             |
+| MSW Decorators (`@Sync`, `@ExecSpace` etc.) | ✅      | [Documentation](https://tsw-project.github.io/tsw/docs/msw-class)                            |
+| Free functions                              | ✅      | [Documentation](https://tsw-project.github.io/tsw/docs/globals)                            |
+| Global variables                            | ✅      | [Documentation](https://tsw-project.github.io/tsw/docs/globals)                             |
+| Classes                                     | ✅      | [Documentation](https://tsw-project.github.io/tsw/docs/globals)                             |
 | Promises                                    | ✅      |                             |
 | Exceptions                                  | ✅      |                             |
 | TSTL library / `lualib_bundle.lua`          | ✅      | Injected globally           |
 | Exception Source Maps                       | 🚧      |                             |
-| Debugger Source Maps                        | ❌      |                             |
-| npm modules                                 | ❌      |                             |
-| `import` / `export` / `require`             | ❌      | Would require mangling      |
+| Debugger Source Maps                        | ❌      | Not possible                |
+| npm modules                                 | ❌      | Not possible                |
+| `JSON`             | ❌      | [Discussion](https://tsw-project.github.io/tsw/docs/scope#json)           |
+| `import` / `export` / `require`             | ❌      | [Discussion](https://tsw-project.github.io/tsw/docs/scope#import--export--require)           |
 
 ## Getting Started
 

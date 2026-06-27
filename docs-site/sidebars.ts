@@ -14,7 +14,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Technical',
       collapsed: false,
-      items: ['type-declarations', 'transpilation', 'patches'],
+      items: ['type-declarations', 'transpilation', 'patches', 'scope'],
     },
     'cli',
   ],
