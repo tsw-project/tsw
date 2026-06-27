@@ -1,0 +1,20 @@
+[
+    "void",
+    "string",
+    "number",
+    "boolean",
+    "Entity",
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "FastVector2",
+    "FastVector3",
+    "Quaternion",
+    "Color",
+    "List",
+    "Dictionary",
+    "SyncList",
+    "SyncDictionary",
+    "ReadOnlyList",
+    "ReadOnlyDictionary"
+]

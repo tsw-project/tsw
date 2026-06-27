@@ -1,40 +1,12 @@
 import * as ts from "typescript";
-
-// Types that require an explicit = value initializer in mlua property declarations
-const IMMEDIATE_INIT_TYPES = new Set([
-    "number",
-    "int32",
-    "float",
-    "integer",
-    "boolean",
-    "Entity",
-    "EntityRef",
-]);
+import {
+    IMMEDIATE_INIT_TYPES,
+    PASSTHROUGH_TYPES,
+} from "../declarations/patches.ts";
 
 export function hasImmediateInit(type: string): boolean {
     return IMMEDIATE_INIT_TYPES.has(type);
 }
-
-const PASSTHROUGH_TYPES = new Set([
-    "void",
-    "string",
-    "number",
-    "boolean",
-    "Entity",
-    "Vector2",
-    "Vector3",
-    "Vector4",
-    "FastVector2",
-    "FastVector3",
-    "Quaternion",
-    "Color",
-    "List",
-    "Dictionary",
-    "SyncList",
-    "SyncDictionary",
-    "ReadOnlyList",
-    "ReadOnlyDictionary",
-]);
 
 /**
  * Resolves a TypeScript node's type to an mlua type string.

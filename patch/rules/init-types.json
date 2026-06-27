@@ -1,0 +1,9 @@
+[
+    "number",
+    "int32",
+    "float",
+    "integer",
+    "boolean",
+    "Entity",
+    "EntityRef"
+]

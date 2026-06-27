@@ -1,19 +1,21 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { MemberPatch } from "./patcher.ts";
 
-export const IDENTIFIER_RENAMES: Record<string, string> = {
-    __enum: "enum",
-};
+const patchDir = fileURLToPath(new URL("../../patch", import.meta.url));
 
-export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = {
-    "Entity.GetComponent": {
-        parameterTypes: ["Type"],
-        rawSignature:
-            "GetComponent<T extends Component>(componentType: abstract new (...args: any[]) => T): T | undefined",
-    },
+export const IDENTIFIER_RENAMES: Record<string, string> = JSON.parse(
+    readFileSync(`${patchDir}/rules/identifier-map.json`, "utf8"),
+);
 
-    "Entity.ConnectEvent": {
-        parameterTypes: ["Type", "IScriptFunction"],
-        rawSignature:
-            "ConnectEvent<T>(eventType: abstract new (...args: any[]) => T, eventHandler: (event: T) => void): EventHandlerBase",
-    },
-};
+export const PATCHES: Record<string, MemberPatch | MemberPatch[]> = JSON.parse(
+    readFileSync(`${patchDir}/rules/type-map.json`, "utf8"),
+);
+
+export const IMMEDIATE_INIT_TYPES: Set<string> = new Set(
+    JSON.parse(readFileSync(`${patchDir}/rules/init-types.json`, "utf8")),
+);
+
+export const PASSTHROUGH_TYPES: Set<string> = new Set(
+    JSON.parse(readFileSync(`${patchDir}/rules/passthrough-types.json`, "utf8")),
+);
