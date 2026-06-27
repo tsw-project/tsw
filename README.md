@@ -8,6 +8,31 @@ _⚠️Warning: This project is very early in development and should not be used
 
 ---
 
+## Feature Map
+
+`tsw` supports a subset of _TypeScript_ and _TypeScriptToLua_ functionality that is compatible with the `.mlua` format.
+
+| Icon | Meaning       |
+|------|---------------|
+| ✅  | Supported     |
+| 🚧  | Planned       |
+| ❌  | Won't support |
+
+| Feature                                     | Status  | Notes                       |
+|---------------------------------------------|---------|-----------------------------|
+| MSW Classes (`Logic`, `Component` etc.)     | ✅      |                             |
+| MSW Decorators (`@Sync`, `@ExecSpace` etc.) | ✅      |                             |
+| Free functions                              | ✅      |                             |
+| Global variables                            | ✅      |                             |
+| Classes                                     | ✅      |                             |
+| Promises                                    | ✅      |                             |
+| Exceptions                                  | ✅      |                             |
+| TSTL library / `lualib_bundle.lua`          | ✅      | Injected globally           |
+| Exception Source Maps                       | 🚧      |                             |
+| Debugger Source Maps                        | ❌      |                             |
+| npm modules                                 | ❌      |                             |
+| `import` / `export` / `require`             | ❌      | Would require mangling      |
+
 ## Getting Started
 
 ### 1. Prerequisites
