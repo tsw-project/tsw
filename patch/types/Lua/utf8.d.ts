@@ -18,7 +18,7 @@ declare namespace utf8 {
      * character in `s`. Raises an error on encountering an invalid byte
      * sequence.
      */
-    function codes(s: string): [LuaFunc, string, number];
+    function codes(s: string): LuaMultiReturn<[LuaFunc, string, number]>;
 
     /**
      * Returns the byte position in `s` where the `n`-th UTF-8 character

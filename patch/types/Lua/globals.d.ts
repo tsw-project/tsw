@@ -37,20 +37,20 @@ declare function getmetatable(object: LuaAny): LuaAny;
  * Returns an iterator function, `t`, and `0` so that the construction
  * `for i, v in ipairs(t)` iterates over numeric index–value pairs.
  */
-declare function ipairs(t: LuaAny): [LuaFunc, LuaAny, number];
+declare function ipairs(t: LuaAny): LuaMultiReturn<[LuaFunc, LuaAny, number]>;
 
 /**
  * Returns the key and value that follow `index` in `table`.
  * Pass `nil` (or omit `index`) to get the first entry.
  * The enumeration order is unspecified, even for numeric keys.
  */
-declare function next(table: LuaTable, index?: LuaAny): [LuaAny, LuaAny];
+declare function next(table: LuaTable, index?: LuaAny): LuaMultiReturn<[LuaAny, LuaAny]>;
 
 /**
  * Returns an iterator function, `t`, and `nil` so that the construction
  * `for k, v in pairs(t)` iterates over all key–value pairs.
  */
-declare function pairs(t: LuaAny): [LuaFunc, LuaAny, LuaAny];
+declare function pairs(t: LuaAny): LuaMultiReturn<[LuaFunc, LuaAny, LuaAny]>;
 
 /**
  * Calls `f` in protected mode with the given arguments.
@@ -58,7 +58,7 @@ declare function pairs(t: LuaAny): [LuaFunc, LuaAny, LuaAny];
  * - On success: returns `true` followed by all results of `f`.
  * - On error:   returns `false` followed by the error message.
  */
-declare function pcall(f: LuaFunc, ...args: LuaAny[]): [boolean, ...LuaAny[]];
+declare function pcall(f: LuaFunc, ...args: LuaAny[]): LuaMultiReturn<[boolean, ...LuaAny[]]>;
 
 /**
  * Converts each argument to a string via `tostring` and writes the
@@ -126,7 +126,7 @@ declare function type(v: LuaAny): string;
  * - On success: returns `true` followed by all results of `f`.
  * - On error:   returns `false` followed by the result of `msgh`.
  */
-declare function xpcall(f: LuaFunc, msgh: LuaFunc, ...args: LuaAny[]): [boolean, ...LuaAny[]];
+declare function xpcall(f: LuaFunc, msgh: LuaFunc, ...args: LuaAny[]): LuaMultiReturn<[boolean, ...LuaAny[]]>;
 
 /**
  * Swaps the keys and values of `table` and returns the resulting table.

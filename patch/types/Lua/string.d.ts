@@ -17,7 +17,7 @@ declare namespace string {
      * Note: indices and lengths are measured in bytes; exercise caution
      * with multi-byte (multi-language) content.
      */
-    function gsub(s: string, pattern: string, repl: LuaAny, n: number): [string, number];
+    function gsub(s: string, pattern: string, repl: LuaAny, n: number): LuaMultiReturn<[string, number]>;
 
     /**
      * Returns a copy of `s` where every occurrence of `pattern` has been
@@ -26,7 +26,7 @@ declare namespace string {
      * Note: indices and lengths are measured in bytes; exercise caution
      * with multi-byte (multi-language) content.
      */
-    function gsub(s: string, pattern: string, repl: LuaAny): [string, number];
+    function gsub(s: string, pattern: string, repl: LuaAny): LuaMultiReturn<[string, number]>;
 
     /**
      * Looks for the first match of `pattern` in `s` starting at byte
@@ -43,7 +43,7 @@ declare namespace string {
         pattern: string,
         init?: number,
         plain?: boolean
-    ): [number, number] | null;
+    ): LuaMultiReturn<[number, number]> | null;
 
     /**
      * Returns `s` with its characters in reverse order.
@@ -123,7 +123,7 @@ declare namespace string {
      *
      * Note: indices and lengths are measured in bytes.
      */
-    function unpack(fmt: string, s: string, pos?: number): LuaAny[];
+    function unpack(fmt: string, s: string, pos?: number): LuaMultiReturn<[...LuaAny]>;
 
     /**
      * Compares `s1` and `s2` lexicographically.
@@ -153,7 +153,7 @@ interface String {
      *
      * Note: indices and lengths are measured in bytes.
      */
-    gsub(pattern: string, repl: LuaAny, n: number): [string, number];
+    gsub(pattern: string, repl: LuaAny, n: number): LuaMultiReturn<[string, number]>;
 
     /**
      * Returns a copy of this string where every occurrence of `pattern`
@@ -162,7 +162,7 @@ interface String {
      *
      * Note: indices and lengths are measured in bytes.
      */
-    gsub(pattern: string, repl: LuaAny): [string, number];
+    gsub(pattern: string, repl: LuaAny): LuaMultiReturn<[string, number]>;
 
     /**
      * Looks for the first match of `pattern` starting at byte position
@@ -171,7 +171,7 @@ interface String {
      *
      * Note: indices and lengths are measured in bytes.
      */
-    find(pattern: string, init?: number, plain?: boolean): [number, number] | null;
+    find(pattern: string, init?: number, plain?: boolean): LuaMultiReturn<[number, number]> | null;
 
     /** Returns this string with its characters in reverse order. */
     reverse(): string;
@@ -236,7 +236,7 @@ interface String {
      *
      * Note: indices and lengths are measured in bytes.
      */
-    unpack(s: string, pos?: number): LuaAny[];
+    unpack(s: string, pos?: number): LuaMultiReturn<[...LuaAny]>;
 
     /**
      * Lexicographically compares this string with `s`.

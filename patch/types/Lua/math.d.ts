@@ -77,7 +77,7 @@ declare namespace math {
      * Returns the integral part and the fractional part of `x` as two
      * separate values.
      */
-    function modf(x: number): [number, number];
+    function modf(x: number): LuaMultiReturn<[number, number]>;
 
     /**
      * Returns `true` if integer `m` is less than integer `n` when
@@ -144,7 +144,7 @@ declare namespace math {
      * Returns `m` and `e` such that `x = m * 2^e`, where `e` is an
      * integer and |m| ∈ [0.5, 1) (or m = 0 when x = 0).
      */
-    function frexp(x: number): [number, number];
+    function frexp(x: number): LuaMultiReturn<[number, number]>;
 
     /** Returns `x * 2^e`. */
     function ldexp(x: number, e: number): number;
