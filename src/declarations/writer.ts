@@ -5,8 +5,8 @@ import type { ScriptDeclaration } from "./ast.ts";
 import { applyPatches } from "./patcher.ts";
 import { renderDeclaration, renderIndexDeclaration } from "./render.ts";
 
-const runtimeTypesDir = fileURLToPath(
-    new URL("../../runtime/types", import.meta.url),
+const patchTypesDir = fileURLToPath(
+    new URL("../../patch/types", import.meta.url),
 );
 
 export async function writeDeclarations(
@@ -17,14 +17,14 @@ export async function writeDeclarations(
     await rm(outputDirectory, { force: true, recursive: true });
     await mkdir(outputDirectory, { recursive: true });
 
-    const runtimeTypeFiles = (
-        await readdir(runtimeTypesDir, { recursive: true })
+    const patchTypeFiles = (
+        await readdir(patchTypesDir, { recursive: true })
     ).filter((f) => (f as string).endsWith(".d.ts")) as string[];
 
     const references: string[] = [];
-    for (const file of runtimeTypeFiles) {
+    for (const file of patchTypeFiles) {
         const content = await readFile(
-            path.join(runtimeTypesDir, file),
+            path.join(patchTypesDir, file),
             "utf8",
         );
         const outPath = path.join(outputDirectory, file);

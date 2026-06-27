@@ -9,7 +9,7 @@
     },
     "files": [
         "dist",
-        "runtime",
+        "patch",
         "README.md",
         "LICENSE"
     ],
