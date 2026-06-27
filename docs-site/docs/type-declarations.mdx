@@ -1,0 +1,13 @@
+---
+sidebar_position: 1
+---
+
+# Type Declarations
+
+On startup, tsw will generate type declarations into `$(ProjectDir)/Environment/NativeTS`. It will use two sources:
+
+- `$(ProjectDir)/Environment/NativeScripts`: These `.d.mlua` files are parsed by tsw and translated into `.d.ts`.
+    - Because they are read directly from your project files, they should always be up to date whenever you start tsw.
+
+- `$(InstallationDir)/runtime/types`: These `.d.ts` files are bundled with tsw itself, and contains a few functions not covered by NativeScripts, such as various Lua api functions and decorators.
+    - Because they are stored inside tsw, they may become outdated if msw updates their internal api.

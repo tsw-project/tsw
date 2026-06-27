@@ -1,0 +1,53 @@
+---
+sidebar_position: 1
+---
+
+# Transpilation
+
+tsw is a custom wrapper around the [TypeScriptToLua](https://typescripttolua.github.io/) (TSTL) transpiler, and most basic non-msw related transpilation will work the same as on TSTL.
+
+## File Structure
+
+:::warning
+
+The directory structures used by tsw is subject to change. Transpiled files should not be version controlled.
+
+:::
+
+Transpiled files are generated into the `RootDesk/MyDesk/Transpiled` directory.
+
+- [MSW classes](./msw-class) are transpiled into the `RootDesk/MyDesk/Transpiled/Class/<Type>` directory as separate files as required by the `.mlua` format. This means that the name or structure of the `.ts` file that defined the MSW class is irrelevant to where the class is output.
+
+- [Globals](./globals) are all transpiled into the `RootDesk/MyDesk/Transpiled/TSWGlobal.mlua` file in the [tsw global initialization order](http://localhost:3000/tsw/docs/globals#initialization-orders). This is likely to be split into separate files in the future for better organization.
+
+- TSTL lua libraries are stored in `RootDesk/MyDesk/Transpiled/LuaLib.mlua`. 
+
+## Initialization
+
+`TSWGlobal:Load` serves as the bootstrapping entrypoint to the library, and needs to be called at least once before TSW code can safely execute.
+
+Any transpiled method named `OnBeginPlay` will automatically have a `TSWGlobal:Load()` call injected at the top of its body to ensure the system is initialized. It is not required to have a `Logic` with an `OnBeginPlay` method in your project, as `TSWGlobal` will also attempt to initialize itself.
+
+If you use custom `.mlua`, you need to manually call `TSWGlobal:Load()` yourself to make sure the tsw system is initialized before you try to interact with it.
+
+## Instantiation
+
+The transpiler automatically tracks whether types are internal MSW types, MSW classes or custom non-MSW classes and emit the correct instantiation convention when using the `new` keyword.
+
+```ts
+@StructClass
+class MSWStruct extends Struct {}
+
+class NonMSWStruct {}
+
+function MyFunction() {
+    // emits `local msw = MSWStruct()`
+    const msw = new MSWStruct();
+    
+    // emits `local nonMsw = __TS__New(NonMSWStruct)` (TSTL convention)
+    const nonMsw = new NonMSWStruct(); 
+
+    // emits `local vec2 = Vector2()`
+    const vec2 = new Vector2();
+}
+```

@@ -10,6 +10,12 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: ['globals', 'msw-class'],
     },
+    {
+      type: 'category',
+      label: 'Technical',
+      collapsed: false,
+      items: ['type-declarations', 'transpilation'],
+    },
     'cli',
   ],
 };

@@ -78,3 +78,29 @@ class MyOtherLogic extends Logic {
 - Methods and `OnBeginPlay` can safely use any globals (variables, free functions and non-msw classes)
 - MSW class fields can **not** reference globals
 - MSW classes have the same initialization rules as normal `.mlua`
+
+## Instantiation
+
+All instantiation can use the `new` TypeScript keyword, and the transpiler will generate the correct calling convention depending on the type instantiated.
+
+```ts
+@StructClass
+class MSWStruct extends Struct {
+
+}
+
+class NonMSWStruct {
+
+}
+
+function MyFunction() {
+    // ✅ correct
+    const msw = new MSWStruct();
+    const nonMsw = new NonMSWStruct();
+    const vec2 = new Vector2();
+
+    // ❌ incorrect
+    const msw = MSWStruct();
+    const vec2 = Vector2();
+}
+```
