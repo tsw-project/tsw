@@ -14,7 +14,7 @@ export const LUA_EXTRA: string[] = [];
 
 const _luaExtraDir = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../../lua-extra",
+    "../../runtime/lua",
 );
 if (fs.existsSync(_luaExtraDir)) {
     for (const file of fs.readdirSync(_luaExtraDir).sort()) {
