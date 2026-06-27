@@ -1,0 +1,203 @@
+---
+sidebar_position: 3
+---
+
+# Patches
+
+As not all of the MapleStory Worlds `.mlua` specification can be inferred directly from users project directory, tsw bundles a set of internal patches that tells the transpiler about special types, extra lua code or rules for how to behave.
+
+Patches can be found in the `patch` directory of the tsw installation. As these are manually maintained by tsw maintainers, these may need updating in case MSW changes `.mlua` behavior.
+
+## Types
+
+_Location: `$(TSWDir)/patch/types`_
+
+Contains type declarations that the `.mlua` environment provides, but that aren't documented in the `$(ProjectDir)/Environment/NativeScripts` directory. These are manually compiled from official MapleStory Worlds documentation.
+
+## Lua
+
+:::note
+
+Currently empty, but is functional.
+
+:::
+
+_Location: `$(TSWDir)/patch/lua`_
+
+Contains lua files to support TypeScript constructs that TSTL itself doesn't support. Any lua files inside are injected into `LuaLib.mlua`.
+
+## Rules
+
+_Location: `$(TSWDir)/patch/rules`_
+
+Contains special static rules that steer the type generator and transpiler behaviors.
+
+### `identifier-map.json`
+
+Contains TypeScript identifiers that will be directly mapped to another identifier in the transpiled `.mlua`.
+
+#### Example
+
+##### identifier-map.json
+```json
+{
+    "__enum": "enum",
+    // ...
+}
+```
+
+##### input.ts
+```ts
+const obj = {}
+__enum(obj)
+```
+
+##### output
+```lua
+local obj = {}
+enum(obj)
+```
+
+### `init-types.json`
+
+:::warning
+
+Constrained by MSW internals. You cannot add custom values here.
+
+:::
+
+Types that MSW knows how to immediately initialize as MSW class properties.
+
+##### init-types.json
+
+```json
+[
+    "number",
+    // ...
+]
+```
+
+##### input.ts
+
+```ts
+class MyCustomClass = {}
+
+@ComponentClass
+class MyComponent extends Component {
+    a: number = 5 // ✅ correct, number is an init type
+    b: MyCustomClass = new MyCustomClass() // ❌ unsupported
+}
+```
+
+### `passthrough-types.json`
+
+:::warning
+
+Constrained by MSW internals. You cannot add custom values here.
+
+:::
+
+:::note
+
+Your custom MSW classes are automatically added to this set at runtime. You do not need to add them manually.
+
+:::
+
+Types that:
+
+1. Transpile `new` expressions as plain function calls, rather than TSTL-style `__TS_New`
+2. Are transpiled directly into `.mlua` type annotations
+
+_Note: Your custom MSW classes are automatically added to this set at runtime_
+
+#### Example
+
+##### passthrough-types.json
+
+```json
+[
+    "Vector2",
+    // ...
+]
+```
+
+##### input.ts
+
+```ts
+@Logic
+class MyLogic extends Logic {
+    GetVec2(): Vector2 {
+        return new Vector2(0, 0)
+    }
+
+    GetCustomClass(): MyCustomClass {
+        return new MyCustomClass()
+    }
+}
+```
+
+##### output
+
+```lua
+@Logic
+script MyLogic extends Logic {
+    Vector2 GetVec2() {
+        return Vector2(0, 0)
+    }
+
+    any GetCustomClass() {
+        return __TS_New(MyCustomClass)
+    }
+}
+```
+
+### `type-map.json`
+
+Used by the `.d.mlua` parser to swap out swap out specific method declarations with something else in the generated `.d.ts`. This is useful for:
+
+- Adding nullability annotations
+- Adding stricter type generics than `.mlua` supports (e.g. to `Entity.GetComponent`)
+
+#### Examples
+
+##### type-map.json
+
+```json
+{
+    // Targets the "Entity.GetComponent" method
+    "Entity.GetComponent": {
+        // Finds the overload that takes a single "Type" parameter (this field is optional)
+        "parameterTypes": ["Type"],
+        // Replaces it with a declaration that knows the type of the component
+        "rawSignature": "GetComponent<T extends Component>(componentType: abstract new (...args: any[]) => T): T | undefined"
+    }, 
+    // ...
+}
+```
+
+##### Entity.d.mlua
+
+```lua
+@Misc
+script Entity
+    -- ...
+	method Component GetComponent(Type componentType) end
+	method Component GetComponent(string typename) end
+    -- ...
+end
+```
+
+##### Entity.d.ts
+
+```ts
+declare class Entity {
+    // ...
+
+    // Declaration was replaced
+    GetComponent<T extends Component>(componentType: abstract new (...args: any[]) => T): T | undefined;
+
+    // Declaration was unchangd, since input signature was `string` rather than `Type`
+    GetComponent(typename: string): Component; 
+
+    // ...
+}
