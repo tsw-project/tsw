@@ -1,4 +1,3 @@
-import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class.ts";
 import type {
     DocComment,
     EnumMemberDeclaration,
@@ -69,24 +68,6 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
     }
 
     return `${lines.join("\n")}\n`;
-}
-
-export function renderSupportDeclaration(additions = ""): string {
-    const decoratorDeclarations = [...SCRIPT_TYPE_DECORATORS]
-        .map(
-            (name) =>
-                `declare function ${name}(target: abstract new (...args: any[]) => any): void;`,
-        )
-        .join("\n\n");
-
-    return [
-        "/* Shared support declarations for generated Maplestory Worlds types. */",
-        "",
-        decoratorDeclarations,
-        "",
-        "",
-        additions,
-    ].join("\n");
 }
 
 export function renderIndexDeclaration(references: string[]): string {

@@ -1,13 +1,13 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ScriptDeclaration } from "./ast.ts";
 import { applyPatches } from "./patcher.ts";
-import { SUPPORT } from "./patches.ts";
-import {
-    renderDeclaration,
-    renderIndexDeclaration,
-    renderSupportDeclaration,
-} from "./render.ts";
+import { renderDeclaration, renderIndexDeclaration } from "./render.ts";
+
+const runtimeTypesDir = fileURLToPath(
+    new URL("../../runtime/types", import.meta.url),
+);
 
 export async function writeDeclarations(
     outputDirectory: string,
@@ -17,12 +17,21 @@ export async function writeDeclarations(
     await rm(outputDirectory, { force: true, recursive: true });
     await mkdir(outputDirectory, { recursive: true });
 
-    const references: string[] = ["support.d.ts"];
-    await writeFile(
-        path.join(outputDirectory, "support.d.ts"),
-        renderSupportDeclaration(SUPPORT),
-        "utf8",
-    );
+    const runtimeTypeFiles = (
+        await readdir(runtimeTypesDir, { recursive: true })
+    ).filter((f) => (f as string).endsWith(".d.ts")) as string[];
+
+    const references: string[] = [];
+    for (const file of runtimeTypeFiles) {
+        const content = await readFile(
+            path.join(runtimeTypesDir, file),
+            "utf8",
+        );
+        const outPath = path.join(outputDirectory, file);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, content, "utf8");
+        references.push(file.replaceAll(path.sep, "/"));
+    }
 
     applyPatches(declarations);
 
