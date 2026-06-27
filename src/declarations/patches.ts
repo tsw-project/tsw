@@ -17,5 +17,7 @@ export const IMMEDIATE_INIT_TYPES: Set<string> = new Set(
 );
 
 export const PASSTHROUGH_TYPES: Set<string> = new Set(
-    JSON.parse(readFileSync(`${patchDir}/rules/passthrough-types.json`, "utf8")),
+    JSON.parse(
+        readFileSync(`${patchDir}/rules/passthrough-types.json`, "utf8"),
+    ),
 );

@@ -19,7 +19,9 @@ const _luaExtraDir = path.resolve(
 if (fs.existsSync(_luaExtraDir)) {
     for (const file of fs.readdirSync(_luaExtraDir).sort()) {
         if (file.endsWith(".lua")) {
-            LUA_EXTRA.push(fs.readFileSync(path.join(_luaExtraDir, file), "utf8"));
+            LUA_EXTRA.push(
+                fs.readFileSync(path.join(_luaExtraDir, file), "utf8"),
+            );
         }
     }
 }

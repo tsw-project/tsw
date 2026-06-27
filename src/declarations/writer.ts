@@ -23,10 +23,7 @@ export async function writeDeclarations(
 
     const references: string[] = [];
     for (const file of patchTypeFiles) {
-        const content = await readFile(
-            path.join(patchTypesDir, file),
-            "utf8",
-        );
+        const content = await readFile(path.join(patchTypesDir, file), "utf8");
         const outPath = path.join(outputDirectory, file);
         await mkdir(path.dirname(outPath), { recursive: true });
         await writeFile(outPath, content, "utf8");
