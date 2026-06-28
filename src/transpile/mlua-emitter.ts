@@ -153,13 +153,21 @@ export function printMluaScript(
 
     // Get the constructor Lua body upfront so we can mutate it before emitting properties
     const constructorBody = luaMethods.get("____constructor");
-    // Statements to use for constructor body: drop super() call, then filter property assignments
-    const constructorStatements = constructorBody
-        ? (info.extendsName
-              ? getBlockStatements(constructorBody).slice(1)
-              : [...getBlockStatements(constructorBody)]
-          ).filter((s) => !isSelfPropertyAssignment(s, propertyNames))
+    const originalConstructorStatements = constructorBody
+        ? info.extendsName
+            ? getBlockStatements(constructorBody).slice(1)
+            : [...getBlockStatements(constructorBody)]
         : [];
+    const propertyInitializers = collectSelfPropertyInitializers(
+        printer,
+        originalConstructorStatements,
+        propertyNames,
+        info.className,
+    );
+    // Statements to use for constructor body: drop super() call, then filter property assignments
+    const constructorStatements = originalConstructorStatements.filter(
+        (s) => !isSelfPropertyAssignment(s, propertyNames),
+    );
 
     // Emit properties from TypeScript AST
     for (const member of info.members) {
@@ -187,11 +195,13 @@ export function printMluaScript(
         let propInit = "";
         if (!isReadonly && baseTypeName !== "SyncTable") {
             if (hasImmediateInit(typeStr) || member.initializer) {
+                const printedInitializer = propertyInitializers.get(name);
                 const val =
-                    member.initializer &&
+                    printedInitializer ??
+                    (member.initializer &&
                     !isUndefinedLiteral(member.initializer)
                         ? member.initializer.getText(sourceFile)
-                        : "nil";
+                        : "nil");
                 propInit = ` = ${val}`;
             } else {
                 propInit = " = nil";
@@ -321,19 +331,50 @@ function printStatements(
     }
 }
 
+function collectSelfPropertyInitializers(
+    printer: tstl.LuaPrinter,
+    statements: tstl.Statement[],
+    propertyNames: Set<string>,
+    context: string,
+): Map<string, string> {
+    const initializers = new Map<string, string>();
+    for (const statement of statements) {
+        const name = getSelfPropertyAssignmentName(statement, propertyNames);
+        if (name === undefined) continue;
+
+        const printed = printStatements(
+            printer,
+            [statement],
+            `${context}.${name} initializer`,
+        ).trim();
+        const prefix = `self.${name} = `;
+        if (printed.startsWith(prefix)) {
+            initializers.set(name, printed.slice(prefix.length).trim());
+        }
+    }
+    return initializers;
+}
+
 // Returns true if the statement is a `self.<name> = ...` assignment for a known property name
 function isSelfPropertyAssignment(
     s: tstl.Statement,
     propertyNames: Set<string>,
 ): boolean {
-    if (!tstl.isAssignmentStatement(s) || s.left.length !== 1) return false;
+    return getSelfPropertyAssignmentName(s, propertyNames) !== undefined;
+}
+
+function getSelfPropertyAssignmentName(
+    s: tstl.Statement,
+    propertyNames: Set<string>,
+): string | undefined {
+    if (!tstl.isAssignmentStatement(s) || s.left.length !== 1) return undefined;
     // biome-ignore lint/style/noNonNullAssertion: length already checked above
     const lhs = s.left[0]!;
-    if (!tstl.isTableIndexExpression(lhs)) return false;
+    if (!tstl.isTableIndexExpression(lhs)) return undefined;
     if (!tstl.isIdentifier(lhs.table) || lhs.table.text !== "self")
-        return false;
-    if (!tstl.isStringLiteral(lhs.index)) return false;
-    return propertyNames.has(lhs.index.value);
+        return undefined;
+    if (!tstl.isStringLiteral(lhs.index)) return undefined;
+    return propertyNames.has(lhs.index.value) ? lhs.index.value : undefined;
 }
 
 function isUndefinedLiteral(node: ts.Expression): boolean {

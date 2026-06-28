@@ -105,6 +105,23 @@ function getNewExpressionClassName(
     return ts.isIdentifier(expression) ? expression.text : undefined;
 }
 
+function getTypeSymbolName(type: ts.Type): string | undefined {
+    const symbol = type.aliasSymbol ?? type.symbol;
+    if (symbol?.name !== undefined && symbol.name !== "__type") {
+        return symbol.name;
+    }
+    return undefined;
+}
+
+function isKnownMswInstanceType(
+    type: ts.Type,
+    knownMswTypes: Set<string>,
+): boolean {
+    const nonNullableType = type.getNonNullableType();
+    const typeName = getTypeSymbolName(nonNullableType);
+    return typeName !== undefined && knownMswTypes.has(typeName);
+}
+
 export function createMswPlugin(outDir: string): MswPlugin {
     fs.mkdirSync(outDir, { recursive: true });
 
@@ -144,6 +161,44 @@ export function createMswPlugin(outDir: string): MswPlugin {
                 return tstl.createCallExpression(
                     context.transformExpression(node.expression),
                     (node.arguments ?? []).map((arg) =>
+                        context.transformExpression(arg),
+                    ),
+                    node,
+                );
+            },
+
+            [ts.SyntaxKind.CallExpression](
+                node: ts.CallExpression,
+                context: tstl.TransformationContext,
+            ) {
+                const expression = ts.skipOuterExpressions(node.expression);
+                if (
+                    !ts.isPropertyAccessExpression(expression) ||
+                    !ts.isIdentifier(expression.name)
+                ) {
+                    return context.superTransformExpression(node);
+                }
+
+                let knownMswTypes = mswTypeNamesByProgram.get(context.program);
+                if (knownMswTypes === undefined) {
+                    knownMswTypes = collectAllMswTypeNames(context.program);
+                    mswTypeNamesByProgram.set(context.program, knownMswTypes);
+                }
+
+                const receiverType = context.checker.getTypeAtLocation(
+                    expression.expression,
+                );
+                if (!isKnownMswInstanceType(receiverType, knownMswTypes)) {
+                    return context.superTransformExpression(node);
+                }
+
+                return tstl.createMethodCallExpression(
+                    context.transformExpression(expression.expression),
+                    tstl.createIdentifier(
+                        expression.name.text,
+                        expression.name,
+                    ),
+                    node.arguments.map((arg) =>
                         context.transformExpression(arg),
                     ),
                     node,
