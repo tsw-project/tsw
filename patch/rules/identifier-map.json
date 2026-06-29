@@ -1,3 +1,4 @@
 {
-    "__enum": "enum"
+    "__enum": "enum",
+    "SyncList": "SyncTable"
 }

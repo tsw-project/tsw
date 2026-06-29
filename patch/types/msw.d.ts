@@ -42,6 +42,7 @@ interface LuaTable {
 }
 
 type SyncTable<K extends keyof any, V> = Record<K, V>;
+type SyncList<V> = V[]
 
 type EditorAlignmentType = unknown;
 type EditorSystemPalette = unknown;
