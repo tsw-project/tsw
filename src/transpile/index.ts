@@ -3,6 +3,7 @@ import path from "node:path";
 import * as ts from "typescript";
 import { Transpiler, transpileProject } from "typescript-to-lua";
 import { generateDeclarations } from "../declarations/index.ts";
+import { loadTswConfig, type LoadedTswConfig } from "./config.ts";
 import {
     updateGeneratedLogicGlobalsFromProgram,
     updateGeneratedLogicGlobalsFromTsconfig,
@@ -122,6 +123,25 @@ function writeEmittedScriptCode(
     }
 }
 
+function applyRegexToOutput(
+    outDir: string,
+    config: LoadedTswConfig,
+    expectedFiles: Set<string>,
+): void {
+    for (const rel of expectedFiles) {
+        if (!rel.endsWith(".mlua")) continue;
+
+        const filePath = path.join(outDir, rel);
+        if (!fs.existsSync(filePath)) continue;
+
+        const code = fs.readFileSync(filePath, "utf8");
+        const transformed = config.applyMluaRegex(code);
+        if (transformed !== code) {
+            fs.writeFileSync(filePath, transformed);
+        }
+    }
+}
+
 function createTstlWriteFile(
     outDir: string,
     writeFile: ts.WriteFileCallback = ts.sys.writeFile,
@@ -165,6 +185,7 @@ export async function build({
         "Transpiled",
     );
     const tsconfigPath = path.join(resolvedWorkingDirectory, "tsconfig.json");
+    const config = await loadTswConfig(resolvedWorkingDirectory);
 
     if (!fs.existsSync(scriptDir)) {
         fs.mkdirSync(scriptDir, { recursive: true });
@@ -216,7 +237,12 @@ export async function build({
     const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
     ensureOutputDirectory(rootDesk, outDir);
 
-    writeEmittedScriptCode(rootDesk, outDir, emittedScriptCode, emittedScripts);
+    writeEmittedScriptCode(
+        rootDesk,
+        outDir,
+        emittedScriptCode,
+        emittedScripts,
+    );
     writeLualibBundleScript(outDir);
     writeTSWGlobalScript(outDir, topLevelLuaByFile.values());
 
@@ -230,7 +256,9 @@ export async function build({
         );
     }
 
-    removeStaleOutputFiles(outDir, expectedOutputFiles(emittedScripts));
+    const expectedFiles = expectedOutputFiles(emittedScripts);
+    applyRegexToOutput(outDir, config, expectedFiles);
+    removeStaleOutputFiles(outDir, expectedFiles);
 
     return { emitSkipped, outputDirectory: outDir };
 }
@@ -277,8 +305,9 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
         ts.createSemanticDiagnosticsBuilderProgram,
     );
 
-    host.afterProgramCreate = (builderProgram) => {
+    host.afterProgramCreate = async (builderProgram) => {
         try {
+            const config = await loadTswConfig(resolvedWorkingDirectory);
             const program = builderProgram.getProgram();
             updateGeneratedLogicGlobalsFromProgram(scriptDir, program);
 
@@ -342,7 +371,9 @@ export async function watch({ workingDirectory }: WatchOptions): Promise<void> {
                 );
             }
 
-            removeStaleOutputFiles(outDir, expectedOutputFiles(emittedScripts));
+            const expectedFiles = expectedOutputFiles(emittedScripts);
+            applyRegexToOutput(outDir, config, expectedFiles);
+            removeStaleOutputFiles(outDir, expectedFiles);
 
             console.log(
                 `[${new Date().toLocaleTimeString()}] Build complete. Watching for changes...`,
